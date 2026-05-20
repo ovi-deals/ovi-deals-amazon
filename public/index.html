@@ -234,7 +234,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
 
 <script>
 const SUPABASE_URL = 'https://csvksqjalpsfhbmjvrup.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_m4QCCbDoKwHUAx8JLasfjQ_tR1RMl6C';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdmtzcWphbHBzZmhibWp2cnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzE3NTUsImV4cCI6MjA5NDg0Nzc1NX0.8oy02SGnfj7-40hfOLtrbtNzHhnPWifLyY887-0d1ZY';
 const LOW_STOCK_THRESHOLD = 10;
 
 let state = { data: null, summary: null, runTime: null };
@@ -252,14 +252,22 @@ function switchTab(n) {
 }
 
 async function supabaseFetch(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  if (!resp.ok) throw new Error(`Supabase error ${resp.status}`);
+  // Support both old (eyJ...) and new (sb_publishable_...) Supabase key formats
+  const isNewFormat = SUPABASE_KEY.startsWith('sb_publishable_');
+  const headers = isNewFormat ? {
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'X-Client-Info': 'supabase-js/2.0'
+  } : {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Supabase error ${resp.status}: ${body}`);
+  }
   return resp.json();
 }
 
