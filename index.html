@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ovi Deals">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="/manifest.json">
+<title>Ovi Deals — Amazon AU Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f5f5f5;color:#1a1a1a}
+.topbar{background:#1a1a1a;color:#fff;padding:0 1.5rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-sub{font-size:11px;color:#888}
+.last-update{font-size:11px;color:#888;text-align:right}
+.container{max-width:1280px;margin:0 auto;padding:1rem 1rem 4rem}
+.tabs{display:flex;gap:2px;background:#fff;border-radius:10px;padding:4px;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{flex:0 0 auto;padding:7px 12px;font-size:12px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;font-weight:500;white-space:nowrap}
+.tab.active{background:#1a1a1a;color:#fff}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:#fff;border-radius:12px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem}
+@media(min-width:600px){.metrics{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.metrics{grid-template-columns:repeat(5,1fr)}}
+.metric{background:#fff;border-radius:12px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.07);text-align:center}
+.metric-label{font-size:11px;color:#999;margin-bottom:4px;font-weight:500}
+.metric-val{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.metric-sub{font-size:10px;color:#bbb;margin-top:2px}
+.section-label{font-size:11px;font-weight:600;color:#999;letter-spacing:.07em;text-transform:uppercase;margin:1rem 0 .5rem}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 10px;font-weight:600;color:#999;border-bottom:1px solid #f0f0f0;font-size:11px;text-transform:uppercase;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+tr.row-danger td{background:#fff5f5}
+tr.row-warn td{background:#fffbeb}
+tr.row-solo td{background:#f0fdf4}
+tr.row-zero td{background:#fef2f2}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.b-ok{background:#dcfce7;color:#166534}
+.b-warn{background:#fef9c3;color:#854d0e}
+.b-danger{background:#fee2e2;color:#991b1b}
+.b-info{background:#dbeafe;color:#1e40af}
+.b-purple{background:#f3e8ff;color:#6b21a8}
+.b-gray{background:#f3f4f6;color:#374151}
+.b-red{background:#fecaca;color:#7f1d1d}
+.alert{border-radius:10px;padding:.75rem 1rem;margin-bottom:8px;border-left:3px solid #ef4444;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.alert-warn{border-left-color:#f59e0b}
+.alert-info{border-left-color:#3b82f6}
+.alert-solo{border-left-color:#22c55e}
+.alert-zero{border-left-color:#dc2626}
+.alert-title{font-weight:600;font-size:13px;margin-bottom:2px}
+.alert-body{font-size:12px;color:#666}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.empty-state{text-align:center;padding:3rem;color:#bbb;font-size:13px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:3rem;color:#999;font-size:13px}
+.spinner{width:20px;height:20px;border:2px solid #e0e0e0;border-top-color:#1a1a1a;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;background:#fff;cursor:pointer;outline:none}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.btn-dark{background:#1a1a1a;color:#fff}
+.btn-outline{background:#fff;color:#1a1a1a;border:1px solid #e0e0e0}
+.refresh-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:4px}
+.status-dot.old{background:#f59e0b}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.pill{background:#1a1a1a;color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.pill-x{cursor:pointer;opacity:.7}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Ovi Deals — Amazon AU</div>
+    <div class="topbar-sub">Buy box · Stock · Pricing · Profit</div>
+  </div>
+  <div class="last-update" id="last-update">Loading...</div>
+</div>
+
+<div class="container">
+  <div class="refresh-bar">
+    <div style="font-size:12px;color:#666"><span class="status-dot" id="status-dot"></span><span id="status-text">Fetching latest data...</span></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="loadData()">🔄 Refresh</button>
+      <button class="btn btn-outline" onclick="switchTab('history')">📅 History</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" onclick="switchTab('master')">📋 Master</button>
+    <button class="tab" onclick="switchTab('buybox')">🏆 Buy box</button>
+    <button class="tab" onclick="switchTab('stock')">📦 Stock</button>
+    <button class="tab" onclick="switchTab('pricing')">💲 Pricing</button>
+    <button class="tab" onclick="switchTab('history')">📅 History</button>
+  </div>
+
+  <div id="loading" class="loading"><div class="spinner"></div>Loading latest analysis...</div>
+  <div id="app" style="display:none">
+
+    <!-- OVERVIEW -->
+    <div id="tab-overview" class="tab-panel active">
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Listings</div><div class="metric-val" id="m-total">—</div></div>
+        <div class="metric"><div class="metric-label">Buy box wins</div><div class="metric-val" id="m-wins" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">Buy box lost</div><div class="metric-val" id="m-lost" style="color:#ef4444">—</div></div>
+        <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="m-zero" style="color:#dc2626">—</div></div>
+        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="m-low" style="color:#f59e0b">—</div></div>
+      </div>
+      <div class="card">
+        <div class="section-label">Priority alerts</div>
+        <div id="alerts-container"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- MASTER VIEW -->
+    <div id="tab-master" class="tab-panel">
+      <div class="filter-row">
+        <select id="mv-buybox" onchange="renderMaster()">
+          <option value="all">All buy box</option>
+          <option value="win">Winning</option>
+          <option value="lose">Lost</option>
+          <option value="solo">Sole seller</option>
+        </select>
+        <select id="mv-stock" onchange="renderMaster()">
+          <option value="all">All stock</option>
+          <option value="zero">Zero stock</option>
+          <option value="low">Low stock</option>
+          <option value="ok">Healthy</option>
+        </select>
+        <select id="mv-pricing" onchange="renderMaster()">
+          <option value="all">All pricing</option>
+          <option value="toolow">Too low</option>
+          <option value="competitive">Competitive</option>
+          <option value="toohigh">Too high</option>
+        </select>
+        <select id="mv-sort" onchange="renderMaster()">
+          <option value="default">Priority sort</option>
+          <option value="price-desc">Price ↓</option>
+          <option value="price-asc">Price ↑</option>
+          <option value="stock-asc">Stock ↑</option>
+          <option value="name">Name A-Z</option>
+        </select>
+        <button class="btn btn-outline" onclick="resetMasterFilters()" style="font-size:11px">Reset</button>
+        <button class="btn btn-outline" onclick="exportMaster()" style="font-size:11px">⬇ CSV</button>
+        <span id="mv-count" style="font-size:12px;color:#999"></span>
+      </div>
+      <div id="mv-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem"></div>
+      <div id="mv-empty" class="empty-state" style="display:none"><div class="empty-icon">📋</div>No products match filters</div>
+      <div class="card" style="padding:0">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Product</th><th>Buy box</th><th>Comp.</th>
+              <th>Your price</th><th>BB price</th><th>Gap</th>
+              <th>Amz qty</th><th>Stock</th>
+            </tr></thead>
+            <tbody id="mv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUY BOX -->
+    <div id="tab-buybox" class="tab-panel">
+      <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+        <div class="metric"><div class="metric-label">Win rate</div><div class="metric-val" id="bb-rate">—</div></div>
+        <div class="metric"><div class="metric-label">Winning</div><div class="metric-val" id="bb-win" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">Lost</div><div class="metric-val" id="bb-lose" style="color:#ef4444">—</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <div style="display:flex;justify-content:flex-end;padding:.75rem 1rem .5rem">
+          <select id="bb-filter" onchange="renderBuyBox()">
+            <option value="all">All listings</option>
+            <option value="win">Winning</option>
+            <option value="lose">Lost</option>
+            <option value="solo">Sole seller</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Product</th><th>Competitors</th><th>Your price</th><th>BB price</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="bb-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div id="tab-stock" class="tab-panel">
+      <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
+        <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="st-zero" style="color:#dc2626">—</div><div class="metric-sub">restock urgently</div></div>
+        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="st-low" style="color:#f59e0b">—</div><div class="metric-sub">below 10 units</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <div style="display:flex;justify-content:flex-end;padding:.75rem 1rem .5rem">
+          <select id="st-filter" onchange="renderStock()">
+            <option value="all">All</option>
+            <option value="zero">Zero only</option>
+            <option value="low">Low only</option>
+            <option value="ok">Healthy only</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Product</th><th>Amazon qty</th><th>Your price</th><th>Status</th></tr></thead>
+          <tbody id="st-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div id="tab-pricing" class="tab-panel">
+      <div class="card" style="padding:0">
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Product</th><th>Your price</th><th>BB price</th><th>Competitors</th><th>Gap</th><th>Status</th></tr></thead>
+          <tbody id="price-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" class="tab-panel">
+      <div class="card">
+        <div class="section-label">Recent runs</div>
+        <div id="history-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+</div>
+
+<script>
+const SUPABASE_URL = 'https://csvksqjalpsfhbmjvrup.supabase.co';
+const SUPABASE_KEY = 'REPLACE_WITH_YOUR_PUBLISHABLE_KEY';
+const LOW_STOCK_THRESHOLD = 10;
+
+let state = { data: null, summary: null, runTime: null };
+
+function $(id) { return document.getElementById(id); }
+function v(id) { return document.getElementById(id)?.value || 'all'; }
+
+function switchTab(n) {
+  const names = ['overview','master','buybox','stock','pricing','history'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i] === n));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('tab-' + n);
+  if (panel) panel.classList.add('active');
+  if (n === 'history') loadHistory();
+}
+
+async function supabaseFetch(path) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!resp.ok) throw new Error(`Supabase error ${resp.status}`);
+  return resp.json();
+}
+
+async function loadData() {
+  $('loading').style.display = 'flex';
+  $('app').style.display = 'none';
+  $('status-text').textContent = 'Fetching latest data...';
+
+  try {
+    // Get most recent run
+    const rows = await supabaseFetch('amazon_analysis?select=run_time,data,summary&order=run_time.desc&limit=1');
+    if (!rows || rows.length === 0) {
+      $('loading').innerHTML = '<div class="empty-icon">⏳</div><div>No analysis data yet. GitHub Action will run at 9am, 2pm and 8pm Sydney time.</div>';
+      return;
+    }
+
+    const row = rows[0];
+    state.data = row.data;
+    state.summary = row.summary;
+    state.runTime = new Date(row.run_time);
+
+    // Check if data is fresh (within 6 hours)
+    const ageHours = (Date.now() - state.runTime) / 3600000;
+    const dot = $('status-dot');
+    if (ageHours < 6) { dot.className = 'status-dot'; }
+    else { dot.className = 'status-dot old'; }
+
+    $('status-text').textContent = `Data from ${state.runTime.toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'})} at ${state.runTime.toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit'})}`;
+    $('last-update').textContent = `Updated ${formatAgo(state.runTime)}`;
+
+    $('loading').style.display = 'none';
+    $('app').style.display = 'block';
+
+    renderAll();
+  } catch(e) {
+    $('loading').innerHTML = `<div style="color:#ef4444">Error loading data: ${e.message}</div>`;
+  }
+}
+
+function formatAgo(date) {
+  const mins = Math.floor((Date.now() - date) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs/24)}d ago`;
+}
+
+function renderAll() {
+  if (!state.data) return;
+  const d = state.data;
+  const s = state.summary;
+  const wins = d.filter(x => x.isBuyBoxWinner || x.isOnlyOffer);
+  const lost = d.filter(x => !x.isBuyBoxWinner && !x.isOnlyOffer && x.buyBoxPrice !== null);
+  const zero = d.filter(x => x.amazonQty === 0);
+  const low = d.filter(x => x.amazonQty !== null && x.amazonQty > 0 && x.amazonQty <= LOW_STOCK_THRESHOLD);
+
+  $('m-total').textContent = d.length;
+  $('m-wins').textContent = wins.length;
+  $('m-lost').textContent = lost.length;
+  $('m-zero').textContent = zero.length;
+  $('m-low').textContent = low.length;
+
+  // Alerts
+  const alerts = [];
+  zero.forEach(x => alerts.push({type:'zero', title:`🔴 Zero stock: ${x.title}`, body:`Customers cannot purchase — restock immediately.`}));
+  lost.forEach(x => alerts.push({type:'danger', title:`❌ Lost buy box: ${x.title}`, body:`Your price: ${x.yourPrice?'A$'+x.yourPrice.toFixed(2):'—'} · BB: ${x.buyBoxPrice?'A$'+x.buyBoxPrice.toFixed(2):'—'} · ${x.competitorCount} competitor(s)`}));
+  low.forEach(x => alerts.push({type:'warn', title:`⚠ Low stock: ${x.title}`, body:`Only ${x.amazonQty} units on Amazon.`}));
+  d.filter(x=>x.isOnlyOffer).forEach(x => alerts.push({type:'solo', title:`🟢 Sole seller: ${x.title}`, body:'No competitors — you own the buy box.'}));
+
+  $('alerts-container').innerHTML = alerts.length === 0
+    ? '<div class="alert alert-info"><div class="alert-title">All clear!</div><div class="alert-body">No urgent issues found.</div></div>'
+    : alerts.slice(0,15).map(a => `<div class="alert ${a.type==='warn'?'alert-warn':a.type==='solo'?'alert-solo':a.type==='zero'?'alert-zero':''}"><div class="alert-title">${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');
+
+  renderMaster(); renderBuyBox(); renderStock(); renderPricing();
+}
+
+function renderMaster() {
+  if (!state.data) return;
+  const bbF = v('mv-buybox'), stF = v('mv-stock'), prF = v('mv-pricing'), sort = v('mv-sort');
+
+  let rows = state.data.map(d => {
+    const gap = d.yourPrice && d.buyBoxPrice ? d.yourPrice - d.buyBoxPrice : null;
+    const priceStatus = d.isOnlyOffer ? 'solo' : gap === null ? 'nodata' : gap < -1 ? 'toolow' : gap > 2 ? 'toohigh' : 'competitive';
+    const stockStatus = d.amazonQty === 0 ? 'zero' : d.amazonQty !== null && d.amazonQty <= LOW_STOCK_THRESHOLD ? 'low' : d.amazonQty !== null ? 'ok' : 'nodata';
+    const bbStatus = (d.isBuyBoxWinner || d.isOnlyOffer) ? 'win' : d.buyBoxPrice !== null ? 'lose' : 'nodata';
+    return {...d, gap, priceStatus, stockStatus, bbStatus};
+  });
+
+  if (bbF !== 'all') rows = rows.filter(r => bbF === 'solo' ? r.isOnlyOffer : r.bbStatus === bbF);
+  if (stF !== 'all') rows = rows.filter(r => r.stockStatus === stF);
+  if (prF !== 'all') rows = rows.filter(r => r.priceStatus === prF);
+
+  if (sort === 'price-desc') rows.sort((a,b) => (b.yourPrice||0)-(a.yourPrice||0));
+  else if (sort === 'price-asc') rows.sort((a,b) => (a.yourPrice||0)-(b.yourPrice||0));
+  else if (sort === 'stock-asc') rows.sort((a,b) => (a.amazonQty??9999)-(b.amazonQty??9999));
+  else if (sort === 'name') rows.sort((a,b) => a.title.localeCompare(b.title));
+  else rows.sort((a,b) => { const s=r=>r.stockStatus==='zero'?0:r.bbStatus==='lose'?1:r.stockStatus==='low'?2:3; return s(a)-s(b); });
+
+  $('mv-count').textContent = rows.length + ' product' + (rows.length !== 1 ? 's' : '');
+
+  const pills = [];
+  if (bbF !== 'all') pills.push({label:'BB: '+bbF, id:'mv-buybox'});
+  if (stF !== 'all') pills.push({label:'Stock: '+stF, id:'mv-stock'});
+  if (prF !== 'all') pills.push({label:'Price: '+prF, id:'mv-pricing'});
+  $('mv-pills').innerHTML = pills.map(p => `<span class="pill">${p.label} <span class="pill-x" onclick="document.getElementById('${p.id}').value='all';renderMaster()">✕</span></span>`).join('');
+
+  $('mv-tbody').innerHTML = rows.map(d => {
+    const rc = d.stockStatus==='zero'?'row-zero':d.bbStatus==='lose'?'row-danger':d.stockStatus==='low'?'row-warn':d.isOnlyOffer?'row-solo':'';
+    const bbB = d.bbStatus==='win'
+      ? (d.isOnlyOffer ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>' : '<span class="badge b-ok">✓ Win</span>')
+      : d.bbStatus==='lose' ? '<span class="badge b-danger">✗ Lost</span>' : '<span class="badge b-gray">—</span>';
+    const stB = d.stockStatus==='zero'?'<span class="badge b-red">🔴 Zero</span>':d.stockStatus==='low'?'<span class="badge b-warn">⚠ Low</span>':d.stockStatus==='ok'?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
+    const gapStr = d.gap !== null ? `<span style="color:${d.gap<-1?'#dc2626':d.gap>2?'#f59e0b':'#16a34a'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}</span>` : '—';
+    return `<tr class="${rc}">
+      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td>${bbB}</td>
+      <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8;font-size:11px">Only you</span>':d.competitorCount}</td>
+      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
+      <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
+      <td>${gapStr}</td>
+      <td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td>
+      <td>${stB}</td>
+    </tr>`;
+  }).join('');
+}
+
+function resetMasterFilters() {
+  ['mv-buybox','mv-stock','mv-pricing','mv-sort'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = id==='mv-sort'?'default':'all';
+  });
+  renderMaster();
+}
+
+function exportMaster() {
+  if (!state.data) return;
+  const hdrs = ['Product','ASIN','Buy Box','Competitors','Your Price','BB Price','Gap','Amazon Qty','Stock Status'];
+  const rows = state.data.map(d => {
+    const gap = d.yourPrice && d.buyBoxPrice ? (d.yourPrice - d.buyBoxPrice).toFixed(2) : '';
+    const bb = (d.isBuyBoxWinner||d.isOnlyOffer) ? 'Win' : d.buyBoxPrice ? 'Lost' : 'No data';
+    const stock = d.amazonQty===0?'Zero':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'Low':d.amazonQty!==null?'OK':'No data';
+    return ['"'+d.title.replace(/"/g,'""')+'"',d.asin,bb,d.competitorCount,d.yourPrice?d.yourPrice.toFixed(2):'',d.buyBoxPrice?d.buyBoxPrice.toFixed(2):'',gap,d.amazonQty??'',stock].join(',');
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([[hdrs.join(','),...rows].join('\n')],{type:'text/csv'}));
+  a.download = `ovi-deals-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function renderBuyBox() {
+  if (!state.data) return;
+  const f = v('bb-filter');
+  const all = state.data;
+  const wins = all.filter(d => d.isBuyBoxWinner || d.isOnlyOffer);
+  const lost = all.filter(d => !d.isBuyBoxWinner && !d.isOnlyOffer && d.buyBoxPrice !== null);
+  $('bb-win').textContent = wins.length;
+  $('bb-lose').textContent = lost.length;
+  $('bb-rate').textContent = all.length ? Math.round(wins.length/all.length*100)+'%' : '—';
+
+  let data = all;
+  if (f==='win') data = wins;
+  else if (f==='lose') data = lost;
+  else if (f==='solo') data = all.filter(d=>d.isOnlyOffer);
+
+  $('bb-tbody').innerHTML = data.map(d => {
+    const rc = d.isOnlyOffer?'row-solo':(d.isBuyBoxWinner?'':'row-danger');
+    const badge = d.isOnlyOffer
+      ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>'
+      : d.isBuyBoxWinner ? '<span class="badge b-ok">✓ Win</span>' : d.buyBoxPrice ? '<span class="badge b-danger">✗ Lost</span>' : '<span class="badge b-gray">—</span>';
+    const gap = d.yourPrice && d.buyBoxPrice ? d.yourPrice - d.buyBoxPrice : null;
+    let action = '—';
+    if (d.isOnlyOffer) action = '<span style="color:#16a34a;font-size:11px">No competitors — optimise price</span>';
+    else if (d.isBuyBoxWinner) action = `<span style="color:#999;font-size:11px">${d.competitorCount} competitor(s) — monitor</span>`;
+    else if (gap !== null) {
+      if (Math.abs(gap) < 0.01) action = `<span style="color:#dc2626;font-size:11px">Same price but losing — may be FBA competitor</span>`;
+      else if (gap > 0) action = `<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match</span>`;
+      else action = `<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check metrics</span>`;
+    }
+    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8">Only you</span>':d.competitorCount}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td><td>${badge}</td><td>${action}</td></tr>`;
+  }).join('');
+}
+
+function renderStock() {
+  if (!state.data) return;
+  const f = v('st-filter');
+  const all = state.data;
+  const zero = all.filter(d => d.amazonQty === 0);
+  const low = all.filter(d => d.amazonQty !== null && d.amazonQty > 0 && d.amazonQty <= LOW_STOCK_THRESHOLD);
+  $('st-zero').textContent = zero.length;
+  $('st-low').textContent = low.length;
+
+  let data = all;
+  if (f==='zero') data = zero;
+  else if (f==='low') data = low;
+  else if (f==='ok') data = all.filter(d => d.amazonQty !== null && d.amazonQty > LOW_STOCK_THRESHOLD);
+
+  const sorted = [...data].sort((a,b) => {
+    const s = d => d.amazonQty===0?0:d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?1:d.amazonQty===null?3:2;
+    return s(a)-s(b);
+  });
+
+  $('st-tbody').innerHTML = sorted.map(d => {
+    const rc = d.amazonQty===0?'row-zero':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'row-warn':'';
+    const badge = d.amazonQty===0?'<span class="badge b-red">🔴 Zero</span>':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'<span class="badge b-warn">⚠ Low</span>':d.amazonQty!==null?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
+    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>${badge}</td></tr>`;
+  }).join('');
+}
+
+function renderPricing() {
+  if (!state.data) return;
+  $('price-tbody').innerHTML = state.data.map(d => {
+    if (d.isOnlyOffer) return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
+    if (!d.buyBoxPrice) return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
+    const gap = (d.yourPrice||0) - d.buyBoxPrice;
+    const badge = gap<-1?'<span class="badge b-danger">Too low</span>':gap>2?'<span class="badge b-warn">Too high</span>':'<span class="badge b-ok">Competitive</span>';
+    const rc = gap<-1?'row-danger':gap>2?'row-warn':'';
+    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
+  }).join('');
+}
+
+async function loadHistory() {
+  $('history-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const rows = await supabaseFetch('amazon_analysis?select=run_time,summary&order=run_time.desc&limit=20');
+    if (!rows.length) { $('history-list').innerHTML = '<div class="empty-state">No history yet</div>'; return; }
+    $('history-list').innerHTML = rows.map(r => {
+      const d = new Date(r.run_time);
+      const s = r.summary || {};
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:600;font-size:13px">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</div>
+          <div style="font-size:12px;color:#999">${d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:12px">
+          <span style="color:#22c55e">✓ ${s.buyBoxWins||0} wins</span>
+          <span style="color:#ef4444">✗ ${s.buyBoxLost||0} lost</span>
+          <span style="color:#dc2626">🔴 ${s.zeroStock||0} zero</span>
+          <span style="color:#666">${s.total||0} total</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    $('history-list').innerHTML = `<div style="color:#ef4444">Error: ${e.message}</div>`;
+  }
+}
+
+// Auto refresh every 5 minutes
+setInterval(() => { if (document.visibilityState === 'visible') loadData(); }, 300000);
+
+// Load on start
+loadData();
+</script>
+</body>
+</html>

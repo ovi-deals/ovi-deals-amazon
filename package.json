@@ -1,0 +1,13 @@
+{
+  "name": "ovi-deals-amazon-analyzer",
+  "version": "1.0.0",
+  "description": "Daily Amazon AU analysis for Ovi Deals",
+  "main": "analyze.js",
+  "scripts": {
+    "start": "node analyze.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-fetch": "^3.3.2"
+  }
+}
