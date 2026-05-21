@@ -98,13 +98,28 @@ async function fetchListingsReport(token) {
     }
 
     if (doc?.url) {
-      // Download and decompress via Worker
-      const tr = await fetch(CLOUDFLARE_WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spapi: true, url: doc.url, token, raw: true })
+      // Download directly from S3 — Node.js handles gzip decompression natively
+      console.log('Downloading report from S3...');
+      const tr = await fetch(doc.url, {
+        headers: { 'Accept-Encoding': 'gzip, deflate' }
       });
-      const tsv = await tr.text();
+
+      // Get raw buffer and decompress if needed
+      const buf = await tr.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+
+      let tsv = '';
+      // Check for gzip magic bytes (0x1f 0x8b)
+      if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+        console.log('Report is gzip compressed — decompressing...');
+        const { gunzipSync } = await import('zlib');
+        const decompressed = gunzipSync(Buffer.from(buf));
+        tsv = decompressed.toString('utf-8');
+      } else {
+        tsv = new TextDecoder('utf-8').decode(bytes);
+      }
+
+      console.log(`Report downloaded: ${tsv.length} chars, starts with: ${tsv.slice(0, 60)}`);
 
       if (tsv.includes('\t')) {
         const lines = tsv.split('\n').filter(l => l.trim());
@@ -116,6 +131,8 @@ async function fetchListingsReport(token) {
           const sti = hdrs.findIndex(h => h.includes('status'));
           const ti = hdrs.findIndex(h => h === 'item-name' || h.includes('item name'));
           const qi = hdrs.findIndex(h => h === 'quantity' || h === 'available' || h.includes('quantity'));
+          console.log(`Report headers: ASIN=${ai} Price=${pi} SKU=${si} Status=${sti} Title=${ti} Qty=${qi}`);
+          console.log(`Header row: ${hdrs.slice(0,10).join(' | ')}`);
 
           for (let i = 1; i < lines.length; i++) {
             const c = lines[i].split('\t');
@@ -135,10 +152,74 @@ async function fetchListingsReport(token) {
           }
           console.log(`✓ Report: ${reportAsins.length} listings, ${Object.keys(activeTitles).length} with titles`);
         }
+      } else {
+        console.log('Report does not contain tab-separated data — first 200 chars:', tsv.slice(0, 200));
       }
     }
   } catch (e) {
     console.log('Report error:', e.message);
+  }
+
+  // Fallback: if report gave 0 listings, try GET_FLAT_FILE_OPEN_LISTINGS_DATA report type
+  if (reportAsins.length === 0) {
+    console.log('Report gave 0 listings — trying alternative report type...');
+    try {
+      const rr2 = await spApiPost(token, '/reports/2021-06-30/reports', {
+        reportType: 'GET_FLAT_FILE_OPEN_LISTINGS_DATA',
+        marketplaceIds: [MARKETPLACE_ID]
+      });
+      const reportId2 = rr2.reportId;
+      if (reportId2) {
+        console.log('Alternative report created:', reportId2);
+        let doc2 = null;
+        for (let i = 0; i < 24; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const st = await spApiCall(token, `/reports/2021-06-30/reports/${reportId2}`);
+          if (st.processingStatus === 'DONE') {
+            doc2 = await spApiCall(token, `/reports/2021-06-30/documents/${st.reportDocumentId}`);
+            break;
+          }
+          if (st.processingStatus === 'FATAL') break;
+          if (i % 6 === 0) console.log(`Alt report ${st.processingStatus}... ${(i+1)*5}s`);
+        }
+        if (doc2?.url) {
+          const tr2 = await fetch(doc2.url, { headers: { 'Accept-Encoding': 'gzip, deflate' } });
+          const buf2 = await tr2.arrayBuffer();
+          const bytes2 = new Uint8Array(buf2);
+          let tsv2 = '';
+          if (bytes2[0] === 0x1f && bytes2[1] === 0x8b) {
+            const { gunzipSync } = await import('zlib');
+            tsv2 = gunzipSync(Buffer.from(buf2)).toString('utf-8');
+          } else {
+            tsv2 = new TextDecoder('utf-8').decode(bytes2);
+          }
+          console.log(`Alt report: ${tsv2.length} chars, starts: ${tsv2.slice(0,80)}`);
+          if (tsv2.includes('\t')) {
+            const lines = tsv2.split('\n').filter(l => l.trim());
+            const hdrs = lines[0].split('\t').map(h => h.trim().toLowerCase());
+            const ai = hdrs.findIndex(h => h.includes('asin'));
+            const pi = hdrs.findIndex(h => h.includes('price'));
+            const si = hdrs.findIndex(h => h.includes('sku'));
+            const ti = hdrs.findIndex(h => h.includes('item-name') || h.includes('item name'));
+            for (let i = 1; i < lines.length; i++) {
+              const c = lines[i].split('\t');
+              const asin = c[ai]?.trim();
+              if (!asin) continue;
+              reportAsins.push(asin);
+              const price = pi >= 0 ? parseFloat(c[pi]) || null : null;
+              const sku = si >= 0 ? c[si]?.trim() : '';
+              const title = ti >= 0 ? c[ti]?.trim() : '';
+              if (price) activePrices[asin] = price;
+              if (sku) activeSkus[asin] = sku;
+              if (title) activeTitles[asin] = title;
+            }
+            console.log(`✓ Alt report: ${reportAsins.length} listings`);
+          }
+        }
+      }
+    } catch (e2) {
+      console.log('Alt report error:', e2.message);
+    }
   }
 
   return { reportAsins, activePrices, activeSkus, activeTitles, activeQtys };
@@ -185,8 +266,10 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
       const totalOffers = offers.length;
 
       if (totalOffers > 0) {
+        const MY_SELLER_ID = 'A3HU5LWFBPZMQE'; // Ovi Deals seller ID
         const ourOffer = offers.find(o => {
           if (o.MyOffer === true) return true;
+          if (o.SellerId === MY_SELLER_ID) return true;
           const name = (o.SellerFeedbackRating?.SellerDisplayName || o.SellerName || '').toLowerCase();
           return name.includes(SELLER_NAME);
         });
@@ -196,7 +279,9 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
 
         const bbOffer = offers.find(o => o.IsBuyBoxWinner === true);
         if (ourOffer?.IsBuyBoxWinner === true) isBuyBoxWinner = true;
+        if (ourOffer?.SellerId === MY_SELLER_ID && ourOffer?.IsBuyBoxWinner) isBuyBoxWinner = true;
         if (bbOffer) {
+          if (bbOffer.SellerId === MY_SELLER_ID) isBuyBoxWinner = true;
           const bbName = (bbOffer.SellerFeedbackRating?.SellerDisplayName || bbOffer.SellerName || '').toLowerCase();
           if (bbName.includes(SELLER_NAME)) isBuyBoxWinner = true;
         }
@@ -272,7 +357,7 @@ async function main() {
       await fetchListingsReport(token);
 
     if (reportAsins.length === 0) {
-      throw new Error('No listings found from report');
+      throw new Error('No listings found from report or alternative report. Check SP-API permissions for Reports role.');
     }
 
     const uniqueAsins = [...new Set(reportAsins)].filter(Boolean);
