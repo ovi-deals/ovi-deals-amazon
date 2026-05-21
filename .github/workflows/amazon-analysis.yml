@@ -7,9 +7,6 @@ on:
     - cron: '0 10 * * *'   # 8pm Sydney
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   analyze:
     runs-on: ubuntu-latest
