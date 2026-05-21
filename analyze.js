@@ -225,8 +225,53 @@ async function fetchListingsReport(token) {
   return { reportAsins, activePrices, activeSkus, activeTitles, activeQtys };
 }
 
-// ── Step 2: Buy box + competitive pricing ─────────────────────────────────────
-async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus) {
+// ── Step 2: Fetch FBM quantities from Listings Items API ─────────────────────
+async function fetchFBMQuantities(token, asins, activeSkus) {
+  console.log(`Fetching FBM quantities for ${asins.length} products...`);
+  const qtyMap = {};
+  const MY_SELLER_ID = 'A3HU5LWFBPZMQE';
+
+  for (let idx = 0; idx < asins.length; idx++) {
+    const asin = asins[idx];
+    const sku = activeSkus[asin];
+    if (!sku) continue;
+
+    try {
+      // Listings Items API — fetch quantity for this SKU
+      const d = await spApiCall(token, `/listings/2021-08-01/items/${MY_SELLER_ID}/${encodeURIComponent(sku)}`, {
+        marketplaceIds: MARKETPLACE_ID,
+        includedData: 'attributes,fulfillmentAvailability'
+      });
+
+      // FBM quantity is in fulfillmentAvailability
+      const fulfillment = d.fulfillmentAvailability;
+      if (fulfillment && fulfillment.length > 0) {
+        const qty = fulfillment[0].quantity ?? null;
+        if (qty !== null) qtyMap[asin] = qty;
+      }
+
+      // Also try attributes
+      if (qtyMap[asin] === undefined) {
+        const attrQty = d.attributes?.fulfillment_availability?.[0]?.quantity;
+        if (attrQty !== undefined) qtyMap[asin] = parseInt(attrQty) || 0;
+      }
+    } catch {}
+
+    if (idx > 0 && idx % 100 === 0) console.log(`Qty fetch progress: ${idx}/${asins.length}...`);
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  const found = Object.keys(qtyMap).length;
+  console.log(`✓ FBM quantities: ${found}/${asins.length} products have qty data`);
+  if (found > 0) {
+    const zeros = Object.values(qtyMap).filter(q => q === 0).length;
+    console.log(`  Zero stock: ${zeros}, With stock: ${found - zeros}`);
+  }
+  return qtyMap;
+}
+
+// ── Step 3: Buy box + competitive pricing ─────────────────────────────────────
+async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys) {
   console.log(`Fetching pricing for ${asins.length} products...`);
   const results = [];
 
@@ -234,7 +279,8 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
     const asin = asins[idx];
     const title = activeTitles[asin] || asin;
     const yourPrice = activePrices[asin] || null;
-    const amazonQty = activeQtys[asin] ?? null;
+    // Use FBM qty first, fall back to report qty
+    const amazonQty = fbmQtys[asin] !== undefined ? fbmQtys[asin] : (activeQtys[asin] ?? null);
 
     if (idx > 0 && idx % 50 === 0) console.log(`Progress: ${idx}/${asins.length}...`);
 
@@ -363,12 +409,15 @@ async function main() {
     const uniqueAsins = [...new Set(reportAsins)].filter(Boolean);
     console.log(`Total unique ASINs: ${uniqueAsins.length}`);
 
-    // Step 2: Get pricing and buy box data
+    // Step 2: Fetch FBM quantities from Listings API
+    const fbmQtys = await fetchFBMQuantities(token, uniqueAsins, activeSkus);
+
+    // Step 3: Get pricing and buy box data
     const results = await fetchPricingData(
-      token, uniqueAsins, activePrices, activeTitles, activeQtys, activeSkus
+      token, uniqueAsins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys
     );
 
-    // Step 3: Save to Supabase
+    // Step 4: Save to Supabase
     const summary = await saveToSupabase(results);
 
     console.log('=== Analysis Complete ===');
