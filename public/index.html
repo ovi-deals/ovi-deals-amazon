@@ -193,19 +193,22 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <div id="tab-stock" class="tab-panel">
       <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
         <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="st-zero" style="color:#dc2626">—</div><div class="metric-sub">restock urgently</div></div>
-        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="st-low" style="color:#f59e0b">—</div><div class="metric-sub">below 10 units</div></div>
+        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="st-low" style="color:#f59e0b">—</div><div class="metric-sub">below threshold</div></div>
+        <div class="metric"><div class="metric-label">Healthy stock</div><div class="metric-val" id="st-ok" style="color:#22c55e">—</div><div class="metric-sub">above threshold</div></div>
+        <div class="metric"><div class="metric-label">No qty data</div><div class="metric-val" id="st-nodata" style="color:#999">—</div><div class="metric-sub">not in report</div></div>
       </div>
       <div class="card" style="padding:0">
         <div style="display:flex;justify-content:flex-end;padding:.75rem 1rem .5rem">
           <select id="st-filter" onchange="renderStock()">
-            <option value="all">All</option>
-            <option value="zero">Zero only</option>
-            <option value="low">Low only</option>
+            <option value="all">All listings</option>
+            <option value="zero">Zero stock only</option>
+            <option value="low">Low stock only</option>
             <option value="ok">Healthy only</option>
+            <option value="nodata">No data only</option>
           </select>
         </div>
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>Amazon qty</th><th>Your price</th><th>Status</th></tr></thead>
+          <table><thead><tr><th>Product</th><th>ASIN</th><th>Barcode</th><th style="text-align:center">Amazon qty</th><th>Your price</th><th>Status</th></tr></thead>
           <tbody id="st-tbody"></tbody></table>
         </div>
       </div>
@@ -466,14 +469,20 @@ function renderStock() {
   const all = state.data;
   const zero = all.filter(d => d.amazonQty === 0);
   const low = all.filter(d => d.amazonQty !== null && d.amazonQty > 0 && d.amazonQty <= LOW_STOCK_THRESHOLD);
+  const ok = all.filter(d => d.amazonQty !== null && d.amazonQty > LOW_STOCK_THRESHOLD);
+  const nodata = all.filter(d => d.amazonQty === null);
   $('st-zero').textContent = zero.length;
   $('st-low').textContent = low.length;
+  if($('st-ok')) $('st-ok').textContent = ok.length;
+  if($('st-nodata')) $('st-nodata').textContent = nodata.length;
 
   let data = all;
   if (f==='zero') data = zero;
   else if (f==='low') data = low;
-  else if (f==='ok') data = all.filter(d => d.amazonQty !== null && d.amazonQty > LOW_STOCK_THRESHOLD);
+  else if (f==='ok') data = ok;
+  else if (f==='nodata') data = nodata;
 
+  // Sort: zero first → low → ok → no data
   const sorted = [...data].sort((a,b) => {
     const s = d => d.amazonQty===0?0:d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?1:d.amazonQty===null?3:2;
     return s(a)-s(b);
@@ -481,8 +490,23 @@ function renderStock() {
 
   $('st-tbody').innerHTML = sorted.map(d => {
     const rc = d.amazonQty===0?'row-zero':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'row-warn':'';
-    const badge = d.amazonQty===0?'<span class="badge b-red">🔴 Zero</span>':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'<span class="badge b-warn">⚠ Low</span>':d.amazonQty!==null?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
-    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>${badge}</td></tr>`;
+    const badge = d.amazonQty===0
+      ?'<span class="badge b-red">🔴 Zero stock</span>'
+      :d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD
+      ?'<span class="badge b-warn">⚠ Low</span>'
+      :d.amazonQty!==null
+      ?'<span class="badge b-ok">✓ OK</span>'
+      :'<span class="badge b-gray">No data</span>';
+    const qtyColor = d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit';
+    const barcode = d.barcode&&d.barcode!=='—'?`<span style="font-family:monospace;font-size:11px">${d.barcode}</span>`:'<span style="color:#ccc">—</span>';
+    return `<tr class="${rc}">
+      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
+      <td>${barcode}</td>
+      <td style="font-weight:700;color:${qtyColor};text-align:center">${d.amazonQty!==null?d.amazonQty:'—'}</td>
+      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
+      <td>${badge}</td>
+    </tr>`;
   }).join('');
 }
 
