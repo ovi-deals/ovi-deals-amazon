@@ -183,7 +183,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           </select>
         </div>
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>Competitors</th><th>Your price</th><th>BB price</th><th>Status</th><th>Action</th></tr></thead>
+          <table><thead><tr><th>Product</th><th>ASIN</th><th>Barcode</th><th>Competitors</th><th>Your price</th><th>BB price</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="bb-tbody"></tbody></table>
         </div>
       </div>
@@ -252,7 +252,6 @@ function switchTab(n) {
 }
 
 async function supabaseFetch(path) {
-  // Pass apikey as URL parameter — most reliable across all Supabase key formats
   const separator = path.includes('?') ? '&' : '?';
   const url = `${SUPABASE_URL}/rest/v1/${path}${separator}apikey=${SUPABASE_KEY}`;
   const resp = await fetch(url, {
@@ -430,20 +429,34 @@ function renderBuyBox() {
   else if (f==='solo') data = all.filter(d=>d.isOnlyOffer);
 
   $('bb-tbody').innerHTML = data.map(d => {
-    const rc = d.isOnlyOffer?'row-solo':(d.isBuyBoxWinner?'':'row-danger');
+    // Row colour: sole seller = green, winning = white, lost = red
+    const rc = d.isOnlyOffer ? 'row-solo' : d.isBuyBoxWinner ? '' : 'row-danger';
+    // Badge: sole seller shows green Win + Sole label
     const badge = d.isOnlyOffer
-      ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>'
-      : d.isBuyBoxWinner ? '<span class="badge b-ok">✓ Win</span>' : d.buyBoxPrice ? '<span class="badge b-danger">✗ Lost</span>' : '<span class="badge b-gray">—</span>';
+      ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-ok" style="font-size:10px;opacity:.8">Sole seller</span>'
+      : d.isBuyBoxWinner ? '<span class="badge b-ok">✓ Win</span>'
+      : d.buyBoxPrice ? '<span class="badge b-danger">✗ Lost</span>'
+      : '<span class="badge b-gray">—</span>';
     const gap = d.yourPrice && d.buyBoxPrice ? d.yourPrice - d.buyBoxPrice : null;
     let action = '—';
-    if (d.isOnlyOffer) action = '<span style="color:#16a34a;font-size:11px">No competitors — optimise price</span>';
+    if (d.isOnlyOffer) action = '<span style="color:#16a34a;font-size:11px">✓ No competitors — you control the price</span>';
     else if (d.isBuyBoxWinner) action = `<span style="color:#999;font-size:11px">${d.competitorCount} competitor(s) — monitor</span>`;
     else if (gap !== null) {
       if (Math.abs(gap) < 0.01) action = `<span style="color:#dc2626;font-size:11px">Same price but losing — may be FBA competitor</span>`;
-      else if (gap > 0) action = `<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match</span>`;
-      else action = `<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check metrics</span>`;
+      else if (gap > 0) action = `<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match buy box</span>`;
+      else action = `<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check seller metrics</span>`;
     }
-    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8">Only you</span>':d.competitorCount}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td><td>${badge}</td><td>${action}</td></tr>`;
+    const barcode = d.barcode && d.barcode !== '—' ? `<span style="font-family:monospace;font-size:11px">${d.barcode}</span>` : '<span style="color:#ccc">—</span>';
+    return `<tr class="${rc}">
+      <td style="font-weight:600;font-size:12px;max-width:220px">${d.title}</td>
+      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
+      <td>${barcode}</td>
+      <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#16a34a;font-weight:600">Only you</span>':d.competitorCount}</td>
+      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
+      <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
+      <td>${badge}</td>
+      <td style="font-size:11px">${action}</td>
+    </tr>`;
   }).join('');
 }
 
