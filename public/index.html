@@ -156,7 +156,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Product</th><th>Buy box</th><th>Comp.</th>
+              <th>Product</th><th>ASIN</th><th>Buy box</th><th>Comp.</th>
               <th>Your price</th><th>BB price</th><th>Gap</th>
               <th>Amz qty</th><th>Stock</th>
             </tr></thead>
@@ -218,7 +218,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <div id="tab-pricing" class="tab-panel">
       <div class="card" style="padding:0">
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>Your price</th><th>BB price</th><th>Competitors</th><th>Gap</th><th>Status</th></tr></thead>
+          <table><thead><tr><th>Product</th><th>ASIN</th><th>Your price</th><th>BB price</th><th>Competitors</th><th>Gap</th><th>Status</th></tr></thead>
           <tbody id="price-tbody"></tbody></table>
         </div>
       </div>
@@ -383,6 +383,7 @@ function renderMaster() {
     const gapStr = d.gap !== null ? `<span style="color:${d.gap<-1?'#dc2626':d.gap>2?'#f59e0b':'#16a34a'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}</span>` : '—';
     return `<tr class="${rc}">
       <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
       <td>${bbB}</td>
       <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8;font-size:11px">Only you</span>':d.competitorCount}</td>
       <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
@@ -513,12 +514,12 @@ function renderStock() {
 function renderPricing() {
   if (!state.data) return;
   $('price-tbody').innerHTML = state.data.map(d => {
-    if (d.isOnlyOffer) return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
-    if (!d.buyBoxPrice) return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
+    if (d.isOnlyOffer) return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
+    if (!d.buyBoxPrice) return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
     const gap = (d.yourPrice||0) - d.buyBoxPrice;
     const badge = gap<-1?'<span class="badge b-danger">Too low</span>':gap>2?'<span class="badge b-warn">Too high</span>':'<span class="badge b-ok">Competitive</span>';
     const rc = gap<-1?'row-danger':gap>2?'row-warn':'';
-    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
+    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
   }).join('');
 }
 
