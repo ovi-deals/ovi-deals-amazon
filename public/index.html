@@ -500,8 +500,10 @@ function renderStock() {
       :'<span class="badge b-gray">No data</span>';
     const qtyColor = d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit';
     const barcode = d.barcode&&d.barcode!=='—'?`<span style="font-family:monospace;font-size:11px">${d.barcode}</span>`:'<span style="color:#ccc">—</span>';
+    const statusBadge = d.listingStatus && d.listingStatus.toLowerCase() !== 'active' 
+      ? `<span class="badge b-warn" style="font-size:10px">${d.listingStatus}</span> ` : '';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td style="font-weight:600;font-size:12px;max-width:200px">${statusBadge}${d.title}</td>
       <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
       <td>${barcode}</td>
       <td style="font-weight:700;color:${qtyColor};text-align:center">${d.amazonQty!==null?d.amazonQty:'—'}</td>
