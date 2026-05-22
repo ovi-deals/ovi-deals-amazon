@@ -71,7 +71,7 @@ async function spApiPost(token, path, body) {
 // ── Step 1: Get listings report ───────────────────────────────────────────────
 async function fetchListingsReport(token) {
   console.log('Requesting listings report...');
-  const reportAsins = [], activePrices = {}, activeSkus = {}, activeTitles = {}, activeQtys = {};
+  const reportAsins = [], activePrices = {}, activeSkus = {}, activeTitles = {}, activeQtys = {}, activeStatuses = {};
 
   try {
     const rr = await spApiPost(token, '/reports/2021-06-30/reports', {
@@ -138,8 +138,8 @@ async function fetchListingsReport(token) {
             const c = lines[i].split('\t');
             const asin = c[ai]?.trim();
             if (!asin) continue;
-            const status = sti >= 0 ? c[sti]?.trim().toLowerCase() : '';
-            if (status && status !== 'active') continue;
+            // Include ALL listings — active, inactive, zero stock everything
+            const status = sti >= 0 ? c[sti]?.trim() : '';
             reportAsins.push(asin);
             const price = pi >= 0 ? parseFloat(c[pi]) || null : null;
             const sku = si >= 0 ? c[si]?.trim() : '';
@@ -149,6 +149,8 @@ async function fetchListingsReport(token) {
             if (sku) activeSkus[asin] = sku;
             if (title) activeTitles[asin] = title;
             if (!isNaN(qty) && qty >= 0) activeQtys[asin] = qty;
+            // Store listing status for display
+            if (status) activeStatuses[asin] = status;
           }
           console.log(`✓ Report: ${reportAsins.length} listings, ${Object.keys(activeTitles).length} with titles`);
         }
@@ -222,7 +224,7 @@ async function fetchListingsReport(token) {
     }
   }
 
-  return { reportAsins, activePrices, activeSkus, activeTitles, activeQtys };
+  return { reportAsins, activePrices, activeSkus, activeTitles, activeQtys, activeStatuses };
 }
 
 // ── Step 2: Fetch FBM quantities from Listings Items API ─────────────────────
@@ -271,7 +273,7 @@ async function fetchFBMQuantities(token, asins, activeSkus) {
 }
 
 // ── Step 3: Buy box + competitive pricing ─────────────────────────────────────
-async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys) {
+async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys, activeStatuses) {
   console.log(`Fetching pricing for ${asins.length} products...`);
   const results = [];
 
@@ -348,7 +350,8 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
     results.push({
       asin, title, yourPrice, buyBoxPrice, lowestOffer,
       isBuyBoxWinner, competitorCount, isOnlyOffer,
-      amazonQty, sku: activeSkus[asin] || null
+      amazonQty, sku: activeSkus[asin] || null,
+      listingStatus: activeStatuses[asin] || 'Active'
     });
 
     // Small delay to avoid rate limiting
@@ -399,7 +402,7 @@ async function main() {
     const token = await getAccessToken();
 
     // Step 1: Get listings
-    const { reportAsins, activePrices, activeSkus, activeTitles, activeQtys } =
+    const { reportAsins, activePrices, activeSkus, activeTitles, activeQtys, activeStatuses } =
       await fetchListingsReport(token);
 
     if (reportAsins.length === 0) {
@@ -414,7 +417,7 @@ async function main() {
 
     // Step 3: Get pricing and buy box data
     const results = await fetchPricingData(
-      token, uniqueAsins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys
+      token, uniqueAsins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys, activeStatuses
     );
 
     // Step 4: Save to Supabase
