@@ -15,7 +15,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .topbar{background:#1a1a1a;color:#fff;padding:0 1.5rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .topbar-title{font-size:15px;font-weight:600}
 .topbar-sub{font-size:11px;color:#888}
-.last-update{font-size:11px;color:#888;text-align:right}
 .container{max-width:1280px;margin:0 auto;padding:1rem 1rem 4rem}
 .tabs{display:flex;gap:2px;background:#fff;border-radius:10px;padding:4px;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{flex:0 0 auto;padding:7px 12px;font-size:12px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;font-weight:500;white-space:nowrap}
@@ -70,6 +69,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
 .pill{background:#1a1a1a;color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
 .pill-x{cursor:pointer;opacity:.7}
+.mono{font-family:monospace;font-size:11px}
 </style>
 </head>
 <body>
@@ -77,9 +77,9 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
 <div class="topbar">
   <div>
     <div class="topbar-title">Ovi Deals — Amazon AU</div>
-    <div class="topbar-sub">Buy box · Stock · Pricing · Profit</div>
+    <div class="topbar-sub">Buy box · Stock · Pricing</div>
   </div>
-  <div class="last-update" id="last-update">Loading...</div>
+  <div style="font-size:11px;color:#888;text-align:right" id="last-update">Loading...</div>
 </div>
 
 <div class="container">
@@ -107,8 +107,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <div id="tab-overview" class="tab-panel active">
       <div class="metrics">
         <div class="metric"><div class="metric-label">Listings</div><div class="metric-val" id="m-total">—</div></div>
-        <div class="metric"><div class="metric-label">Buy box wins</div><div class="metric-val" id="m-wins" style="color:#22c55e">—</div></div>
-        <div class="metric"><div class="metric-label">Buy box lost</div><div class="metric-val" id="m-lost" style="color:#ef4444">—</div></div>
+        <div class="metric"><div class="metric-label">BB Wins</div><div class="metric-val" id="m-wins" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">BB Lost</div><div class="metric-val" id="m-lost" style="color:#ef4444">—</div></div>
         <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="m-zero" style="color:#dc2626">—</div></div>
         <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="m-low" style="color:#f59e0b">—</div></div>
       </div>
@@ -118,7 +118,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
       </div>
     </div>
 
-    <!-- MASTER VIEW -->
+    <!-- MASTER -->
     <div id="tab-master" class="tab-panel">
       <div class="filter-row">
         <select id="mv-buybox" onchange="renderMaster()">
@@ -146,19 +146,25 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           <option value="stock-asc">Stock ↑</option>
           <option value="name">Name A-Z</option>
         </select>
-        <button class="btn btn-outline" onclick="resetMasterFilters()" style="font-size:11px">Reset</button>
-        <button class="btn btn-outline" onclick="exportMaster()" style="font-size:11px">⬇ CSV</button>
+        <button class="btn btn-outline" onclick="resetMV()" style="font-size:11px">Reset</button>
+        <button class="btn btn-outline" onclick="exportMV()" style="font-size:11px">⬇ CSV</button>
         <span id="mv-count" style="font-size:12px;color:#999"></span>
       </div>
       <div id="mv-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem"></div>
-      <div id="mv-empty" class="empty-state" style="display:none"><div class="empty-icon">📋</div>No products match filters</div>
       <div class="card" style="padding:0">
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Product</th><th>ASIN</th><th>Buy box</th><th>Comp.</th>
-              <th>Your price</th><th>BB price</th><th>Gap</th>
-              <th>Amz qty</th><th>Stock</th>
+              <th>Product</th>
+              <th>ASIN</th>
+              <th>Barcode</th>
+              <th>Buy box</th>
+              <th>Comp.</th>
+              <th>Your price</th>
+              <th>BB price</th>
+              <th>Gap</th>
+              <th>Amz qty</th>
+              <th>Stock</th>
             </tr></thead>
             <tbody id="mv-tbody"></tbody>
           </table>
@@ -175,7 +181,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
       </div>
       <div class="card" style="padding:0">
         <div style="display:flex;justify-content:flex-end;padding:.75rem 1rem .5rem">
-          <select id="bb-filter" onchange="renderBuyBox()">
+          <select id="bb-filter" onchange="renderBB()">
             <option value="all">All listings</option>
             <option value="win">Winning</option>
             <option value="lose">Lost</option>
@@ -183,8 +189,19 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           </select>
         </div>
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>ASIN</th><th>Barcode</th><th>Competitors</th><th>Your price</th><th>BB price</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody id="bb-tbody"></tbody></table>
+          <table>
+            <thead><tr>
+              <th>Product</th>
+              <th>ASIN</th>
+              <th>Barcode</th>
+              <th>Competitors</th>
+              <th>Your price</th>
+              <th>BB price</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr></thead>
+            <tbody id="bb-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -194,12 +211,12 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
       <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
         <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="st-zero" style="color:#dc2626">—</div><div class="metric-sub">restock urgently</div></div>
         <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="st-low" style="color:#f59e0b">—</div><div class="metric-sub">below threshold</div></div>
-        <div class="metric"><div class="metric-label">Healthy stock</div><div class="metric-val" id="st-ok" style="color:#22c55e">—</div><div class="metric-sub">above threshold</div></div>
-        <div class="metric"><div class="metric-label">No qty data</div><div class="metric-val" id="st-nodata" style="color:#999">—</div><div class="metric-sub">not in report</div></div>
+        <div class="metric"><div class="metric-label">Healthy</div><div class="metric-val" id="st-ok" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">No qty data</div><div class="metric-val" id="st-nodata" style="color:#999">—</div></div>
       </div>
       <div class="card" style="padding:0">
         <div style="display:flex;justify-content:flex-end;padding:.75rem 1rem .5rem">
-          <select id="st-filter" onchange="renderStock()">
+          <select id="st-filter" onchange="renderST()">
             <option value="all">All listings</option>
             <option value="zero">Zero stock only</option>
             <option value="low">Low stock only</option>
@@ -208,8 +225,17 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           </select>
         </div>
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>ASIN</th><th>Barcode</th><th style="text-align:center">Amazon qty</th><th>Your price</th><th>Status</th></tr></thead>
-          <tbody id="st-tbody"></tbody></table>
+          <table>
+            <thead><tr>
+              <th>Product</th>
+              <th>ASIN</th>
+              <th>Barcode</th>
+              <th style="text-align:center">Amazon qty</th>
+              <th>Your price</th>
+              <th>Status</th>
+            </tr></thead>
+            <tbody id="st-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -218,8 +244,19 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <div id="tab-pricing" class="tab-panel">
       <div class="card" style="padding:0">
         <div class="tbl-wrap">
-          <table><thead><tr><th>Product</th><th>ASIN</th><th>Your price</th><th>BB price</th><th>Competitors</th><th>Gap</th><th>Status</th></tr></thead>
-          <tbody id="price-tbody"></tbody></table>
+          <table>
+            <thead><tr>
+              <th>Product</th>
+              <th>ASIN</th>
+              <th>Barcode</th>
+              <th>Your price</th>
+              <th>BB price</th>
+              <th>Competitors</th>
+              <th>Gap</th>
+              <th>Status</th>
+            </tr></thead>
+            <tbody id="pr-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -232,229 +269,170 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
       </div>
     </div>
 
-  </div><!-- /app -->
+  </div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://csvksqjalpsfhbmjvrup.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdmtzcWphbHBzZmhibWp2cnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzE3NTUsImV4cCI6MjA5NDg0Nzc1NX0.8oy02SGnfj7-40hfOLtrbtNzHhnPWifLyY887-0d1ZY';
-const LOW_STOCK_THRESHOLD = 10;
+const SUPABASE_URL='https://csvksqjalpsfhbmjvrup.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdmtzcWphbHBzZmhibWp2cnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzE3NTUsImV4cCI6MjA5NDg0Nzc1NX0.8oy02SGnfj7-40hfOLtrbtNzHhnPWifLyY887-0d1ZY';
+const LOW=10;
+let state={data:null};
 
-let state = { data: null, summary: null, runTime: null };
+function $(id){return document.getElementById(id);}
+function v(id){return document.getElementById(id)?.value||'all';}
+function bc(d){return d.barcode&&d.barcode!=='—'?`<span class="mono">${d.barcode}</span>`:'<span style="color:#ccc">—</span>';}
+function asin(d){return `<span style="font-size:11px;color:#999">${d.asin||'—'}</span>`;}
 
-function $(id) { return document.getElementById(id); }
-function v(id) { return document.getElementById(id)?.value || 'all'; }
-
-function switchTab(n) {
-  const names = ['overview','master','buybox','stock','pricing','history'];
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i] === n));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  const panel = document.getElementById('tab-' + n);
-  if (panel) panel.classList.add('active');
-  if (n === 'history') loadHistory();
+function switchTab(n){
+  const names=['overview','master','buybox','stock','pricing','history'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===n));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const p=document.getElementById('tab-'+n);if(p)p.classList.add('active');
+  if(n==='history')loadHistory();
 }
 
-async function supabaseFetch(path) {
-  const separator = path.includes('?') ? '&' : '?';
-  const url = `${SUPABASE_URL}/rest/v1/${path}${separator}apikey=${SUPABASE_KEY}`;
-  const resp = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Supabase error ${resp.status}: ${body}`);
-  }
-  return resp.json();
+async function sbFetch(path){
+  const sep=path.includes('?')?'&':'?';
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}apikey=${SUPABASE_KEY}`,{headers:{'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'}});
+  if(!r.ok)throw new Error('Supabase '+r.status);
+  return r.json();
 }
 
-async function loadData() {
-  $('loading').style.display = 'flex';
-  $('app').style.display = 'none';
-  $('status-text').textContent = 'Fetching latest data...';
-
-  try {
-    // Get most recent run
-    const rows = await supabaseFetch('amazon_analysis?select=run_time,data,summary&order=run_time.desc&limit=1');
-    if (!rows || rows.length === 0) {
-      $('loading').innerHTML = '<div class="empty-icon">⏳</div><div>No analysis data yet. GitHub Action will run at 9am, 2pm and 8pm Sydney time.</div>';
-      return;
-    }
-
-    const row = rows[0];
-    state.data = row.data;
-    state.summary = row.summary;
-    state.runTime = new Date(row.run_time);
-
-    // Check if data is fresh (within 6 hours)
-    const ageHours = (Date.now() - state.runTime) / 3600000;
-    const dot = $('status-dot');
-    if (ageHours < 6) { dot.className = 'status-dot'; }
-    else { dot.className = 'status-dot old'; }
-
-    $('status-text').textContent = `Data from ${state.runTime.toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'})} at ${state.runTime.toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit'})}`;
-    $('last-update').textContent = `Updated ${formatAgo(state.runTime)}`;
-
-    $('loading').style.display = 'none';
-    $('app').style.display = 'block';
-
+async function loadData(){
+  $('loading').style.display='flex';
+  $('app').style.display='none';
+  $('status-text').textContent='Fetching latest data...';
+  try{
+    const rows=await sbFetch('amazon_analysis?select=run_time,data,summary&order=run_time.desc&limit=1');
+    if(!rows||!rows.length){$('loading').innerHTML='<div>No data yet. Run the GitHub Action to generate data.</div>';return;}
+    state.data=rows[0].data;
+    const t=new Date(rows[0].run_time);
+    const mins=Math.floor((Date.now()-t)/60000);
+    const ago=mins<60?mins+'m ago':mins<1440?Math.floor(mins/60)+'h ago':Math.floor(mins/1440)+'d ago';
+    $('status-dot').className='status-dot'+(mins>360?' old':'');
+    $('status-text').textContent='Data from '+t.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+' at '+t.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'  ('+ago+')';
+    $('last-update').textContent='Updated '+ago;
+    $('loading').style.display='none';
+    $('app').style.display='block';
     renderAll();
-  } catch(e) {
-    $('loading').innerHTML = `<div style="color:#ef4444">Error loading data: ${e.message}</div>`;
+  }catch(e){
+    $('loading').innerHTML=`<div style="color:#ef4444">Error: ${e.message}</div>`;
   }
 }
 
-function formatAgo(date) {
-  const mins = Math.floor((Date.now() - date) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs/24)}d ago`;
-}
-
-function renderAll() {
-  if (!state.data) return;
-  const d = state.data;
-  const s = state.summary;
-  const wins = d.filter(x => x.isBuyBoxWinner || x.isOnlyOffer);
-  const lost = d.filter(x => !x.isBuyBoxWinner && !x.isOnlyOffer && x.buyBoxPrice !== null);
-  const zero = d.filter(x => x.amazonQty === 0);
-  const low = d.filter(x => x.amazonQty !== null && x.amazonQty > 0 && x.amazonQty <= LOW_STOCK_THRESHOLD);
-
-  $('m-total').textContent = d.length;
-  $('m-wins').textContent = wins.length;
-  $('m-lost').textContent = lost.length;
-  $('m-zero').textContent = zero.length;
-  $('m-low').textContent = low.length;
-
+function renderAll(){
+  if(!state.data)return;
+  const d=state.data;
+  const wins=d.filter(x=>x.isBuyBoxWinner||x.isOnlyOffer);
+  const lost=d.filter(x=>!x.isBuyBoxWinner&&!x.isOnlyOffer&&x.buyBoxPrice!==null);
+  const zero=d.filter(x=>x.amazonQty===0);
+  const low=d.filter(x=>x.amazonQty!==null&&x.amazonQty>0&&x.amazonQty<=LOW);
+  $('m-total').textContent=d.length;
+  $('m-wins').textContent=wins.length;
+  $('m-lost').textContent=lost.length;
+  $('m-zero').textContent=zero.length;
+  $('m-low').textContent=low.length;
   // Alerts
-  const alerts = [];
-  zero.forEach(x => alerts.push({type:'zero', title:`🔴 Zero stock: ${x.title}`, body:`Customers cannot purchase — restock immediately.`}));
-  lost.forEach(x => alerts.push({type:'danger', title:`❌ Lost buy box: ${x.title}`, body:`Your price: ${x.yourPrice?'A$'+x.yourPrice.toFixed(2):'—'} · BB: ${x.buyBoxPrice?'A$'+x.buyBoxPrice.toFixed(2):'—'} · ${x.competitorCount} competitor(s)`}));
-  low.forEach(x => alerts.push({type:'warn', title:`⚠ Low stock: ${x.title}`, body:`Only ${x.amazonQty} units on Amazon.`}));
-  d.filter(x=>x.isOnlyOffer).forEach(x => alerts.push({type:'solo', title:`🟢 Sole seller: ${x.title}`, body:'No competitors — you own the buy box.'}));
-
-  $('alerts-container').innerHTML = alerts.length === 0
-    ? '<div class="alert alert-info"><div class="alert-title">All clear!</div><div class="alert-body">No urgent issues found.</div></div>'
-    : alerts.slice(0,15).map(a => `<div class="alert ${a.type==='warn'?'alert-warn':a.type==='solo'?'alert-solo':a.type==='zero'?'alert-zero':''}"><div class="alert-title">${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');
-
-  renderMaster(); renderBuyBox(); renderStock(); renderPricing();
+  const alerts=[];
+  zero.forEach(x=>alerts.push({t:'zero',title:'🔴 Zero stock: '+x.title,body:'Customers cannot purchase — restock immediately.'}));
+  lost.forEach(x=>alerts.push({t:'danger',title:'❌ Lost buy box: '+x.title,body:'Your: '+(x.yourPrice?'A$'+x.yourPrice.toFixed(2):'—')+' · BB: '+(x.buyBoxPrice?'A$'+x.buyBoxPrice.toFixed(2):'—')+' · '+x.competitorCount+' competitor(s)'}));
+  low.forEach(x=>alerts.push({t:'warn',title:'⚠ Low stock: '+x.title,body:'Only '+x.amazonQty+' units on Amazon.'}));
+  d.filter(x=>x.isOnlyOffer).forEach(x=>alerts.push({t:'solo',title:'🟢 Sole seller: '+x.title,body:'No competitors — you own the buy box.'}));
+  $('alerts-container').innerHTML=alerts.length===0
+    ?'<div class="alert alert-info"><div class="alert-title">All clear!</div></div>'
+    :alerts.slice(0,15).map(a=>`<div class="alert ${a.t==='warn'?'alert-warn':a.t==='solo'?'alert-solo':a.t==='zero'?'alert-zero':''}"><div class="alert-title">${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');
+  renderMaster();renderBB();renderST();renderPR();
 }
 
-function renderMaster() {
-  if (!state.data) return;
-  const bbF = v('mv-buybox'), stF = v('mv-stock'), prF = v('mv-pricing'), sort = v('mv-sort');
-
-  let rows = state.data.map(d => {
-    const gap = d.yourPrice && d.buyBoxPrice ? d.yourPrice - d.buyBoxPrice : null;
-    const priceStatus = d.isOnlyOffer ? 'solo' : gap === null ? 'nodata' : gap < -1 ? 'toolow' : gap > 2 ? 'toohigh' : 'competitive';
-    const stockStatus = d.amazonQty === 0 ? 'zero' : d.amazonQty !== null && d.amazonQty <= LOW_STOCK_THRESHOLD ? 'low' : d.amazonQty !== null ? 'ok' : 'nodata';
-    const bbStatus = (d.isBuyBoxWinner || d.isOnlyOffer) ? 'win' : d.buyBoxPrice !== null ? 'lose' : 'nodata';
-    return {...d, gap, priceStatus, stockStatus, bbStatus};
+function renderMaster(){
+  if(!state.data)return;
+  const bbF=v('mv-buybox'),stF=v('mv-stock'),prF=v('mv-pricing'),sort=v('mv-sort');
+  let rows=state.data.map(d=>{
+    const gap=d.yourPrice&&d.buyBoxPrice?d.yourPrice-d.buyBoxPrice:null;
+    const ps=d.isOnlyOffer?'solo':gap===null?'nodata':gap<-1?'toolow':gap>2?'toohigh':'competitive';
+    const ss=d.amazonQty===0?'zero':d.amazonQty!==null&&d.amazonQty<=LOW?'low':d.amazonQty!==null?'ok':'nodata';
+    const bs=(d.isBuyBoxWinner||d.isOnlyOffer)?'win':d.buyBoxPrice!==null?'lose':'nodata';
+    return {...d,gap,ps,ss,bs};
   });
-
-  if (bbF !== 'all') rows = rows.filter(r => bbF === 'solo' ? r.isOnlyOffer : r.bbStatus === bbF);
-  if (stF !== 'all') rows = rows.filter(r => r.stockStatus === stF);
-  if (prF !== 'all') rows = rows.filter(r => r.priceStatus === prF);
-
-  if (sort === 'price-desc') rows.sort((a,b) => (b.yourPrice||0)-(a.yourPrice||0));
-  else if (sort === 'price-asc') rows.sort((a,b) => (a.yourPrice||0)-(b.yourPrice||0));
-  else if (sort === 'stock-asc') rows.sort((a,b) => (a.amazonQty??9999)-(b.amazonQty??9999));
-  else if (sort === 'name') rows.sort((a,b) => a.title.localeCompare(b.title));
-  else rows.sort((a,b) => { const s=r=>r.stockStatus==='zero'?0:r.bbStatus==='lose'?1:r.stockStatus==='low'?2:3; return s(a)-s(b); });
-
-  $('mv-count').textContent = rows.length + ' product' + (rows.length !== 1 ? 's' : '');
-
-  const pills = [];
-  if (bbF !== 'all') pills.push({label:'BB: '+bbF, id:'mv-buybox'});
-  if (stF !== 'all') pills.push({label:'Stock: '+stF, id:'mv-stock'});
-  if (prF !== 'all') pills.push({label:'Price: '+prF, id:'mv-pricing'});
-  $('mv-pills').innerHTML = pills.map(p => `<span class="pill">${p.label} <span class="pill-x" onclick="document.getElementById('${p.id}').value='all';renderMaster()">✕</span></span>`).join('');
-
-  $('mv-tbody').innerHTML = rows.map(d => {
-    const rc = d.stockStatus==='zero'?'row-zero':d.bbStatus==='lose'?'row-danger':d.stockStatus==='low'?'row-warn':d.isOnlyOffer?'row-solo':'';
-    const bbB = d.bbStatus==='win'
-      ? (d.isOnlyOffer ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>' : '<span class="badge b-ok">✓ Win</span>')
-      : d.bbStatus==='lose' ? '<span class="badge b-danger">✗ Lost</span>' : '<span class="badge b-gray">—</span>';
-    const stB = d.stockStatus==='zero'?'<span class="badge b-red">🔴 Zero</span>':d.stockStatus==='low'?'<span class="badge b-warn">⚠ Low</span>':d.stockStatus==='ok'?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
-    const gapStr = d.gap !== null ? `<span style="color:${d.gap<-1?'#dc2626':d.gap>2?'#f59e0b':'#16a34a'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}</span>` : '—';
+  if(bbF!=='all')rows=rows.filter(r=>bbF==='solo'?r.isOnlyOffer:r.bs===bbF);
+  if(stF!=='all')rows=rows.filter(r=>r.ss===stF);
+  if(prF!=='all')rows=rows.filter(r=>r.ps===prF);
+  if(sort==='price-desc')rows.sort((a,b)=>(b.yourPrice||0)-(a.yourPrice||0));
+  else if(sort==='price-asc')rows.sort((a,b)=>(a.yourPrice||0)-(b.yourPrice||0));
+  else if(sort==='stock-asc')rows.sort((a,b)=>(a.amazonQty??9999)-(b.amazonQty??9999));
+  else if(sort==='name')rows.sort((a,b)=>a.title.localeCompare(b.title));
+  else rows.sort((a,b)=>{const s=r=>r.ss==='zero'?0:r.bs==='lose'?1:r.ss==='low'?2:3;return s(a)-s(b);});
+  $('mv-count').textContent=rows.length+' product'+(rows.length!==1?'s':'');
+  const pills=[];
+  if(bbF!=='all')pills.push({l:'BB: '+bbF,id:'mv-buybox'});
+  if(stF!=='all')pills.push({l:'Stock: '+stF,id:'mv-stock'});
+  if(prF!=='all')pills.push({l:'Price: '+prF,id:'mv-pricing'});
+  $('mv-pills').innerHTML=pills.map(p=>`<span class="pill">${p.l} <span class="pill-x" onclick="document.getElementById('${p.id}').value='all';renderMaster()">✕</span></span>`).join('');
+  $('mv-tbody').innerHTML=rows.map(d=>{
+    const rc=d.ss==='zero'?'row-zero':d.bs==='lose'?'row-danger':d.ss==='low'?'row-warn':d.isOnlyOffer?'row-solo':'';
+    const bbB=d.bs==='win'?(d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>':'<span class="badge b-ok">✓ Win</span>'):d.bs==='lose'?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
+    const stB=d.ss==='zero'?'<span class="badge b-red">🔴 Zero</span>':d.ss==='low'?'<span class="badge b-warn">⚠ Low</span>':d.ss==='ok'?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
+    const gS=d.gap!==null?`<span style="color:${d.gap<-1?'#dc2626':d.gap>2?'#f59e0b':'#16a34a'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}</span>`:'—';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td style="font-weight:600;font-size:12px;max-width:180px">${d.title}</td>
       <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
+      <td>${bc(d)}</td>
       <td>${bbB}</td>
       <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8;font-size:11px">Only you</span>':d.competitorCount}</td>
       <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
       <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
-      <td>${gapStr}</td>
-      <td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td>
+      <td>${gS}</td>
+      <td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td>
       <td>${stB}</td>
     </tr>`;
   }).join('');
 }
 
-function resetMasterFilters() {
-  ['mv-buybox','mv-stock','mv-pricing','mv-sort'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value = id==='mv-sort'?'default':'all';
+function resetMV(){['mv-buybox','mv-stock','mv-pricing'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='all';});set('mv-sort','default');renderMaster();}
+function set(id,v){const el=document.getElementById(id);if(el)el.value=v;}
+
+function exportMV(){
+  if(!state.data)return;
+  const h=['Product','ASIN','Barcode','Buy Box','Competitors','Your Price','BB Price','Gap','Amazon Qty','Stock'];
+  const rows=state.data.map(d=>{
+    const gap=d.yourPrice&&d.buyBoxPrice?(d.yourPrice-d.buyBoxPrice).toFixed(2):'';
+    const bb=(d.isBuyBoxWinner||d.isOnlyOffer)?'Win':d.buyBoxPrice?'Lost':'No data';
+    const st=d.amazonQty===0?'Zero':d.amazonQty!==null&&d.amazonQty<=LOW?'Low':d.amazonQty!==null?'OK':'No data';
+    return['"'+(d.title||'').replace(/"/g,'""')+'"',d.asin||'',d.barcode||'',bb,d.competitorCount,d.yourPrice?d.yourPrice.toFixed(2):'',d.buyBoxPrice?d.buyBoxPrice.toFixed(2):'',gap,d.amazonQty??'',st].join(',');
   });
-  renderMaster();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'}));
+  a.download='ovi-deals-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
 
-function exportMaster() {
-  if (!state.data) return;
-  const hdrs = ['Product','ASIN','Buy Box','Competitors','Your Price','BB Price','Gap','Amazon Qty','Stock Status'];
-  const rows = state.data.map(d => {
-    const gap = d.yourPrice && d.buyBoxPrice ? (d.yourPrice - d.buyBoxPrice).toFixed(2) : '';
-    const bb = (d.isBuyBoxWinner||d.isOnlyOffer) ? 'Win' : d.buyBoxPrice ? 'Lost' : 'No data';
-    const stock = d.amazonQty===0?'Zero':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'Low':d.amazonQty!==null?'OK':'No data';
-    return ['"'+d.title.replace(/"/g,'""')+'"',d.asin,bb,d.competitorCount,d.yourPrice?d.yourPrice.toFixed(2):'',d.buyBoxPrice?d.buyBoxPrice.toFixed(2):'',gap,d.amazonQty??'',stock].join(',');
-  });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([[hdrs.join(','),...rows].join('\n')],{type:'text/csv'}));
-  a.download = `ovi-deals-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
-
-function renderBuyBox() {
-  if (!state.data) return;
-  const f = v('bb-filter');
-  const all = state.data;
-  const wins = all.filter(d => d.isBuyBoxWinner || d.isOnlyOffer);
-  const lost = all.filter(d => !d.isBuyBoxWinner && !d.isOnlyOffer && d.buyBoxPrice !== null);
-  $('bb-win').textContent = wins.length;
-  $('bb-lose').textContent = lost.length;
-  $('bb-rate').textContent = all.length ? Math.round(wins.length/all.length*100)+'%' : '—';
-
-  let data = all;
-  if (f==='win') data = wins;
-  else if (f==='lose') data = lost;
-  else if (f==='solo') data = all.filter(d=>d.isOnlyOffer);
-
-  $('bb-tbody').innerHTML = data.map(d => {
-    // Row colour: sole seller = green, winning = white, lost = red
-    const rc = d.isOnlyOffer ? 'row-solo' : d.isBuyBoxWinner ? '' : 'row-danger';
-    // Badge: sole seller shows green Win + Sole label
-    const badge = d.isOnlyOffer
-      ? '<span class="badge b-ok">✓ Win</span> <span class="badge b-ok" style="font-size:10px;opacity:.8">Sole seller</span>'
-      : d.isBuyBoxWinner ? '<span class="badge b-ok">✓ Win</span>'
-      : d.buyBoxPrice ? '<span class="badge b-danger">✗ Lost</span>'
-      : '<span class="badge b-gray">—</span>';
-    const gap = d.yourPrice && d.buyBoxPrice ? d.yourPrice - d.buyBoxPrice : null;
-    let action = '—';
-    if (d.isOnlyOffer) action = '<span style="color:#16a34a;font-size:11px">✓ No competitors — you control the price</span>';
-    else if (d.isBuyBoxWinner) action = `<span style="color:#999;font-size:11px">${d.competitorCount} competitor(s) — monitor</span>`;
-    else if (gap !== null) {
-      if (Math.abs(gap) < 0.01) action = `<span style="color:#dc2626;font-size:11px">Same price but losing — may be FBA competitor</span>`;
-      else if (gap > 0) action = `<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match buy box</span>`;
-      else action = `<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check seller metrics</span>`;
+function renderBB(){
+  if(!state.data)return;
+  const f=v('bb-filter'),all=state.data;
+  const wins=all.filter(d=>d.isBuyBoxWinner||d.isOnlyOffer);
+  const lost=all.filter(d=>!d.isBuyBoxWinner&&!d.isOnlyOffer&&d.buyBoxPrice!==null);
+  $('bb-win').textContent=wins.length;
+  $('bb-lose').textContent=lost.length;
+  $('bb-rate').textContent=all.length?Math.round(wins.length/all.length*100)+'%':'—';
+  let data=all;
+  if(f==='win')data=wins;
+  else if(f==='lose')data=lost;
+  else if(f==='solo')data=all.filter(d=>d.isOnlyOffer);
+  $('bb-tbody').innerHTML=data.map(d=>{
+    const rc=d.isOnlyOffer?'row-solo':d.isBuyBoxWinner?'':'row-danger';
+    const badge=d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-ok" style="font-size:10px;opacity:.8">Sole</span>':d.isBuyBoxWinner?'<span class="badge b-ok">✓ Win</span>':d.buyBoxPrice?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
+    const gap=d.yourPrice&&d.buyBoxPrice?d.yourPrice-d.buyBoxPrice:null;
+    let action='—';
+    if(d.isOnlyOffer)action='<span style="color:#16a34a;font-size:11px">No competitors — you control the price</span>';
+    else if(d.isBuyBoxWinner)action=`<span style="color:#999;font-size:11px">${d.competitorCount} competitor(s) — monitor</span>`;
+    else if(gap!==null){
+      if(Math.abs(gap)<0.01)action='<span style="color:#dc2626;font-size:11px">Same price but losing — may be FBA competitor</span>';
+      else if(gap>0)action=`<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match buy box</span>`;
+      else action='<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check metrics</span>';
     }
-    const barcode = d.barcode && d.barcode !== '—' ? `<span style="font-family:monospace;font-size:11px">${d.barcode}</span>` : '<span style="color:#ccc">—</span>';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:220px">${d.title}</td>
+      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
       <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${barcode}</td>
+      <td>${bc(d)}</td>
       <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#16a34a;font-weight:600">Only you</span>':d.competitorCount}</td>
       <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
       <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
@@ -464,97 +442,72 @@ function renderBuyBox() {
   }).join('');
 }
 
-function renderStock() {
-  if (!state.data) return;
-  const f = v('st-filter');
-  const all = state.data;
-  const zero = all.filter(d => d.amazonQty === 0);
-  const low = all.filter(d => d.amazonQty !== null && d.amazonQty > 0 && d.amazonQty <= LOW_STOCK_THRESHOLD);
-  const ok = all.filter(d => d.amazonQty !== null && d.amazonQty > LOW_STOCK_THRESHOLD);
-  const nodata = all.filter(d => d.amazonQty === null);
-  $('st-zero').textContent = zero.length;
-  $('st-low').textContent = low.length;
-  if($('st-ok')) $('st-ok').textContent = ok.length;
-  if($('st-nodata')) $('st-nodata').textContent = nodata.length;
-
-  let data = all;
-  if (f==='zero') data = zero;
-  else if (f==='low') data = low;
-  else if (f==='ok') data = ok;
-  else if (f==='nodata') data = nodata;
-
-  // Sort: zero first → low → ok → no data
-  const sorted = [...data].sort((a,b) => {
-    const s = d => d.amazonQty===0?0:d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?1:d.amazonQty===null?3:2;
-    return s(a)-s(b);
-  });
-
-  $('st-tbody').innerHTML = sorted.map(d => {
-    const rc = d.amazonQty===0?'row-zero':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'row-warn':'';
-    const badge = d.amazonQty===0
-      ?'<span class="badge b-red">🔴 Zero stock</span>'
-      :d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD
-      ?'<span class="badge b-warn">⚠ Low</span>'
-      :d.amazonQty!==null
-      ?'<span class="badge b-ok">✓ OK</span>'
-      :'<span class="badge b-gray">No data</span>';
-    const qtyColor = d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW_STOCK_THRESHOLD?'#f59e0b':'inherit';
-    const barcode = d.barcode&&d.barcode!=='—'?`<span style="font-family:monospace;font-size:11px">${d.barcode}</span>`:'<span style="color:#ccc">—</span>';
-    const statusBadge = d.listingStatus && d.listingStatus.toLowerCase() !== 'active' 
-      ? `<span class="badge b-warn" style="font-size:10px">${d.listingStatus}</span> ` : '';
+function renderST(){
+  if(!state.data)return;
+  const f=v('st-filter'),all=state.data;
+  const zero=all.filter(d=>d.amazonQty===0);
+  const low=all.filter(d=>d.amazonQty!==null&&d.amazonQty>0&&d.amazonQty<=LOW);
+  const ok=all.filter(d=>d.amazonQty!==null&&d.amazonQty>LOW);
+  const nd=all.filter(d=>d.amazonQty===null);
+  $('st-zero').textContent=zero.length;
+  $('st-low').textContent=low.length;
+  $('st-ok').textContent=ok.length;
+  $('st-nodata').textContent=nd.length;
+  let data=all;
+  if(f==='zero')data=zero;
+  else if(f==='low')data=low;
+  else if(f==='ok')data=ok;
+  else if(f==='nodata')data=nd;
+  const sorted=[...data].sort((a,b)=>{const s=d=>d.amazonQty===0?0:d.amazonQty!==null&&d.amazonQty<=LOW?1:d.amazonQty===null?3:2;return s(a)-s(b);});
+  $('st-tbody').innerHTML=sorted.map(d=>{
+    const rc=d.amazonQty===0?'row-zero':d.amazonQty!==null&&d.amazonQty<=LOW?'row-warn':'';
+    const badge=d.amazonQty===0?'<span class="badge b-red">🔴 Zero</span>':d.amazonQty!==null&&d.amazonQty<=LOW?'<span class="badge b-warn">⚠ Low</span>':d.amazonQty!==null?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">No data</span>';
+    const qc=d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW?'#f59e0b':'inherit';
+    const sbadge=d.listingStatus&&d.listingStatus.toLowerCase()!=='active'?`<span class="badge b-warn" style="font-size:10px;margin-right:4px">${d.listingStatus}</span>`:'';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:200px">${statusBadge}${d.title}</td>
+      <td style="font-weight:600;font-size:12px;max-width:200px">${sbadge}${d.title}</td>
       <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${barcode}</td>
-      <td style="font-weight:700;color:${qtyColor};text-align:center">${d.amazonQty!==null?d.amazonQty:'—'}</td>
+      <td>${bc(d)}</td>
+      <td style="font-weight:700;color:${qc};text-align:center">${d.amazonQty!==null?d.amazonQty:'—'}</td>
       <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
 }
 
-function renderPricing() {
-  if (!state.data) return;
-  $('price-tbody').innerHTML = state.data.map(d => {
-    if (d.isOnlyOffer) return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
-    if (!d.buyBoxPrice) return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
-    const gap = (d.yourPrice||0) - d.buyBoxPrice;
-    const badge = gap<-1?'<span class="badge b-danger">Too low</span>':gap>2?'<span class="badge b-warn">Too high</span>':'<span class="badge b-ok">Competitive</span>';
-    const rc = gap<-1?'row-danger':gap>2?'row-warn':'';
-    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
+function renderPR(){
+  if(!state.data)return;
+  $('pr-tbody').innerHTML=state.data.map(d=>{
+    if(d.isOnlyOffer)return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
+    if(!d.buyBoxPrice)return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
+    const gap=(d.yourPrice||0)-d.buyBoxPrice;
+    const badge=gap<-1?'<span class="badge b-danger">Too low</span>':gap>2?'<span class="badge b-warn">Too high</span>':'<span class="badge b-ok">Competitive</span>';
+    const rc=gap<-1?'row-danger':gap>2?'row-warn':'';
+    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
   }).join('');
 }
 
-async function loadHistory() {
-  $('history-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  try {
-    const rows = await supabaseFetch('amazon_analysis?select=run_time,summary&order=run_time.desc&limit=20');
-    if (!rows.length) { $('history-list').innerHTML = '<div class="empty-state">No history yet</div>'; return; }
-    $('history-list').innerHTML = rows.map(r => {
-      const d = new Date(r.run_time);
-      const s = r.summary || {};
+async function loadHistory(){
+  $('history-list').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    const rows=await sbFetch('amazon_analysis?select=run_time,summary&order=run_time.desc&limit=20');
+    if(!rows.length){$('history-list').innerHTML='<div class="empty-state">No history yet</div>';return;}
+    $('history-list').innerHTML=rows.map(r=>{
+      const d=new Date(r.run_time);const s=r.summary||{};
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-weight:600;font-size:13px">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</div>
-          <div style="font-size:12px;color:#999">${d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div>
-        </div>
+        <div><div style="font-weight:600;font-size:13px">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</div>
+        <div style="font-size:12px;color:#999">${d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div></div>
         <div style="display:flex;gap:12px;font-size:12px">
           <span style="color:#22c55e">✓ ${s.buyBoxWins||0} wins</span>
           <span style="color:#ef4444">✗ ${s.buyBoxLost||0} lost</span>
           <span style="color:#dc2626">🔴 ${s.zeroStock||0} zero</span>
           <span style="color:#666">${s.total||0} total</span>
-        </div>
-      </div>`;
+        </div></div>`;
     }).join('');
-  } catch(e) {
-    $('history-list').innerHTML = `<div style="color:#ef4444">Error: ${e.message}</div>`;
-  }
+  }catch(e){$('history-list').innerHTML=`<div style="color:#ef4444">Error: ${e.message}</div>`;}
 }
 
-// Auto refresh every 5 minutes
-setInterval(() => { if (document.visibilityState === 'visible') loadData(); }, 300000);
-
-// Load on start
+setInterval(()=>{if(document.visibilityState==='visible')loadData();},300000);
 loadData();
 </script>
 </body>
