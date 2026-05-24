@@ -435,22 +435,47 @@ async function fetchExcelFromOutlook() {
     const userEmail = MS_USER_EMAIL;
     console.log(`Searching Outlook for "Stock List" email for ${userEmail}...`);
 
-    // Search for latest email with subject "Stock List" that has attachments
+    // First test - check if we can access the mailbox at all
+    const testResp = await fetch(`https://graph.microsoft.com/v1.0/users/${userEmail}/mailFolders/inbox`, {
+      headers: { 'Authorization': `Bearer ${msToken}` }
+    });
+    const testData = await testResp.json();
+    if (!testResp.ok) {
+      console.log('⚠ Cannot access mailbox:', JSON.stringify(testData));
+      return null;
+    }
+    console.log(`✓ Mailbox accessible. Inbox has ${testData.totalItemCount} total items`);
+
+    // Search for latest email with subject "Stock List"
+    // Try without hasAttachments filter first to see if subject matches
     const searchUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?` +
-      `$filter=subject eq 'Stock List' and hasAttachments eq true` +
-      `&$orderby=receivedDateTime desc&$top=1&$select=id,subject,receivedDateTime,hasAttachments`;
+      `$filter=subject eq 'Stock List'` +
+      `&$orderby=receivedDateTime desc&$top=5&$select=id,subject,receivedDateTime,hasAttachments`;
 
     const msgResp = await fetch(searchUrl, {
       headers: { 'Authorization': `Bearer ${msToken}` }
     });
     const msgData = await msgResp.json();
+    console.log(`Email search result: ${msgData.value?.length || 0} emails found`);
+    if (msgData.value?.length > 0) {
+      msgData.value.forEach(m => console.log(`  - "${m.subject}" received ${m.receivedDateTime} hasAttachments=${m.hasAttachments}`));
+    } else {
+      console.log('Search response:', JSON.stringify(msgData).slice(0, 300));
+      // Try broader search - last 10 emails to confirm access
+      const recentUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?$top=5&$select=subject,receivedDateTime&$orderby=receivedDateTime desc`;
+      const recentResp = await fetch(recentUrl, { headers: { 'Authorization': `Bearer ${msToken}` } });
+      const recentData = await recentResp.json();
+      console.log('Recent emails in mailbox:');
+      recentData.value?.forEach(m => console.log(`  - "${m.subject}" ${m.receivedDateTime}`));
+    }
 
     if (!msgData.value || msgData.value.length === 0) {
       console.log('⚠ No "Stock List" email found in Outlook');
       return null;
     }
 
-    const msg = msgData.value[0];
+    // Find one with attachment
+    const msg = msgData.value.find(m => m.hasAttachments) || msgData.value[0];
     console.log(`Found email: "${msg.subject}" received ${msg.receivedDateTime}`);
 
     // Get attachments
