@@ -3,10 +3,12 @@
 
 import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
+import * as XLSX from 'xlsx';
 
 const MARKETPLACE_ID = 'A39IBJ37TRP1C6'; // Amazon AU
 const SP_API_HOST = 'https://sellingpartnerapi-fe.amazon.com';
 const SELLER_NAME = 'ovi deals';
+const MY_SELLER_ID = 'A3HU5LWFBPZMQE';
 
 const {
   AMAZON_CLIENT_ID,
@@ -14,7 +16,11 @@ const {
   AMAZON_REFRESH_TOKEN,
   CLOUDFLARE_WORKER_URL,
   SUPABASE_URL,
-  SUPABASE_SERVICE_KEY
+  SUPABASE_SERVICE_KEY,
+  MS_TENANT_ID,
+  MS_CLIENT_ID,
+  MS_CLIENT_SECRET,
+  MS_USER_EMAIL
 } = process.env;
 
 // Validate environment
@@ -362,12 +368,14 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
 }
 
 // ── Save to Supabase ──────────────────────────────────────────────────────────
-async function saveToSupabase(results) {
+async function saveToSupabase(results, hasExcel = false, excelMatched = 0) {
   const wins = results.filter(d => d.isBuyBoxWinner || d.isOnlyOffer).length;
   const lost = results.filter(d => !d.isBuyBoxWinner && !d.isOnlyOffer && d.buyBoxPrice !== null).length;
   const solos = results.filter(d => d.isOnlyOffer).length;
   const zeroStock = results.filter(d => d.amazonQty === 0).length;
   const lowStock = results.filter(d => d.amazonQty !== null && d.amazonQty > 0 && d.amazonQty <= 10).length;
+  const profitCount = results.filter(d => d.profit !== null).length;
+  const lossCount = results.filter(d => d.profit !== null && d.profit < 0).length;
 
   const summary = {
     total: results.length,
@@ -376,7 +384,11 @@ async function saveToSupabase(results) {
     soleseller: solos,
     zeroStock,
     lowStock,
-    winRate: results.length ? Math.round(wins / results.length * 100) : 0
+    winRate: results.length ? Math.round(wins / results.length * 100) : 0,
+    hasExcel,
+    excelMatched,
+    profitCount,
+    lossCount
   };
 
   const { error } = await supabase
@@ -393,6 +405,136 @@ async function saveToSupabase(results) {
   return summary;
 }
 
+// ── Microsoft Graph — Fetch Excel from Outlook ────────────────────────────────
+async function getMSAccessToken() {
+  if (!MS_TENANT_ID || !MS_CLIENT_ID || !MS_CLIENT_SECRET) {
+    console.log('⚠ MS credentials not set — skipping Excel fetch from email');
+    return null;
+  }
+  const resp = await fetch(`https://login.microsoftonline.com/${MS_TENANT_ID}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: MS_CLIENT_ID,
+      client_secret: MS_CLIENT_SECRET,
+      scope: 'https://graph.microsoft.com/.default'
+    })
+  });
+  const data = await resp.json();
+  if (!data.access_token) throw new Error('MS auth failed: ' + JSON.stringify(data));
+  console.log('✓ Microsoft Graph token obtained');
+  return data.access_token;
+}
+
+async function fetchExcelFromOutlook() {
+  try {
+    const msToken = await getMSAccessToken();
+    if (!msToken) return null;
+
+    const userEmail = MS_USER_EMAIL;
+    console.log(`Searching Outlook for "Stock List" email for ${userEmail}...`);
+
+    // Search for latest email with subject "Stock List" that has attachments
+    const searchUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?` +
+      `$filter=subject eq 'Stock List' and hasAttachments eq true` +
+      `&$orderby=receivedDateTime desc&$top=1&$select=id,subject,receivedDateTime,hasAttachments`;
+
+    const msgResp = await fetch(searchUrl, {
+      headers: { 'Authorization': `Bearer ${msToken}` }
+    });
+    const msgData = await msgResp.json();
+
+    if (!msgData.value || msgData.value.length === 0) {
+      console.log('⚠ No "Stock List" email found in Outlook');
+      return null;
+    }
+
+    const msg = msgData.value[0];
+    console.log(`Found email: "${msg.subject}" received ${msg.receivedDateTime}`);
+
+    // Get attachments
+    const attResp = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${userEmail}/messages/${msg.id}/attachments`,
+      { headers: { 'Authorization': `Bearer ${msToken}` } }
+    );
+    const attData = await attResp.json();
+
+    // Find Excel attachment
+    const excelAtt = attData.value?.find(a =>
+      a.name?.match(/\.(xlsx|xls|csv)$/i) ||
+      a.contentType?.includes('spreadsheet') ||
+      a.contentType?.includes('excel')
+    );
+
+    if (!excelAtt) {
+      console.log('⚠ No Excel attachment found in Stock List email');
+      return null;
+    }
+
+    console.log(`✓ Found attachment: ${excelAtt.name} (${Math.round(excelAtt.size/1024)}KB)`);
+
+    // Decode base64 content
+    const fileBuffer = Buffer.from(excelAtt.contentBytes, 'base64');
+
+    // Parse Excel
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    console.log(`✓ Excel parsed: ${rows.length} rows, ${workbook.SheetNames[0]} sheet`);
+    if (rows.length > 0) {
+      console.log(`  Columns: ${Object.keys(rows[0]).join(', ')}`);
+    }
+
+    return rows;
+  } catch (e) {
+    console.log('⚠ Excel fetch error:', e.message);
+    return null;
+  }
+}
+
+function parseExcelData(rows) {
+  if (!rows || rows.length === 0) return { barcodeMap: {}, skuMap: {} };
+
+  // Find relevant columns (case-insensitive)
+  const sample = rows[0];
+  const keys = Object.keys(sample);
+
+  const findCol = (...names) => keys.find(k =>
+    names.some(n => k.toLowerCase().includes(n.toLowerCase()))
+  );
+
+  const barcodeCol = findCol('barcode','ean','upc','gtin','isbn');
+  const qtyCol = findCol('quantity on hand','qty on hand','quantity','qty','stock','available');
+  const priceCol = findCol('sales price','sale price','price','cost');
+  const skuCol = findCol('sku','item code','product code','code');
+  const nameCol = findCol('name','description','product','title','item');
+
+  console.log(`Excel columns mapped: barcode=${barcodeCol} qty=${qtyCol} price=${priceCol} sku=${skuCol}`);
+
+  const barcodeMap = {}; // barcode → {qty, salesPrice, sku, name}
+  const skuMap = {};     // sku → {qty, salesPrice, barcode, name}
+
+  for (const row of rows) {
+    const barcode = String(row[barcodeCol] || '').trim().replace(/\D/g, '');
+    const sku = String(row[skuCol] || '').trim();
+    const qty = parseInt(row[qtyCol]) || 0;
+    const salesPrice = parseFloat(row[priceCol]) || null;
+    const name = String(row[nameCol] || '').trim();
+
+    if (barcode && barcode.length >= 8) {
+      barcodeMap[barcode] = { qty, salesPrice, sku, name };
+    }
+    if (sku) {
+      skuMap[sku] = { qty, salesPrice, barcode, name };
+    }
+  }
+
+  console.log(`✓ Excel parsed: ${Object.keys(barcodeMap).length} barcodes, ${Object.keys(skuMap).length} SKUs`);
+  return { barcodeMap, skuMap };
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('=== Ovi Deals Amazon AU Analysis ===');
@@ -401,34 +543,86 @@ async function main() {
   try {
     const token = await getAccessToken();
 
-    // Step 1: Get listings
+    // Step 1: Fetch Excel from Outlook email
+    console.log('\n--- Step 1: Fetching Excel from Outlook ---');
+    const excelRows = await fetchExcelFromOutlook();
+    const { barcodeMap, skuMap } = parseExcelData(excelRows);
+    const hasExcel = Object.keys(barcodeMap).length > 0 || Object.keys(skuMap).length > 0;
+    console.log(hasExcel ? '✓ Excel data ready for matching' : '⚠ No Excel data — running Amazon-only analysis');
+
+    // Step 2: Get Amazon listings
+    console.log('\n--- Step 2: Fetching Amazon listings ---');
     const { reportAsins, activePrices, activeSkus, activeTitles, activeQtys, activeStatuses } =
       await fetchListingsReport(token);
 
     if (reportAsins.length === 0) {
-      throw new Error('No listings found from report or alternative report. Check SP-API permissions for Reports role.');
+      throw new Error('No listings found. Check SP-API Reports permission.');
     }
 
     const uniqueAsins = [...new Set(reportAsins)].filter(Boolean);
     console.log(`Total unique ASINs: ${uniqueAsins.length}`);
 
-    // Step 2: Fetch FBM quantities from Listings API
+    // Step 3: Fetch FBM quantities
+    console.log('\n--- Step 3: Fetching FBM quantities ---');
     const fbmQtys = await fetchFBMQuantities(token, uniqueAsins, activeSkus);
 
-    // Step 3: Get pricing and buy box data
+    // Step 4: Get pricing and buy box data
+    console.log('\n--- Step 4: Fetching buy box and pricing ---');
     const results = await fetchPricingData(
       token, uniqueAsins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys, activeStatuses
     );
 
-    // Step 4: Save to Supabase
-    const summary = await saveToSupabase(results);
+    // Step 5: Merge Excel data into results
+    console.log('\n--- Step 5: Merging Excel data ---');
+    let matchCount = 0;
+    for (const item of results) {
+      // Try SKU match first (most reliable)
+      let excelData = item.sku ? skuMap[item.sku] : null;
 
-    console.log('=== Analysis Complete ===');
+      // Try barcode match if no SKU match
+      if (!excelData && item.barcode) {
+        const cleanBarcode = String(item.barcode).replace(/\D/g, '');
+        excelData = barcodeMap[cleanBarcode];
+      }
+
+      if (excelData) {
+        item.excelQty = excelData.qty;
+        item.salesPrice = excelData.salesPrice;
+        item.costPrice = excelData.salesPrice ? excelData.salesPrice * 0.8 : null;
+        item.qtyDiff = item.excelQty - (item.amazonQty || 0);
+        matchCount++;
+      } else {
+        item.excelQty = null;
+        item.salesPrice = null;
+        item.costPrice = null;
+        item.qtyDiff = null;
+      }
+
+      // Calculate profit
+      const sp = item.yourPrice || item.buyBoxPrice || null;
+      const cp = item.costPrice;
+      if (sp && cp) {
+        const fee = sp * 0.15; // Amazon AU ~15% referral fee
+        const postage = 8.50;
+        item.profit = sp - cp - fee - postage;
+        item.margin = sp > 0 ? (item.profit / sp * 100) : 0;
+      } else {
+        item.profit = null;
+        item.margin = null;
+      }
+    }
+    console.log(`✓ Excel matched: ${matchCount}/${results.length} products`);
+
+    // Step 6: Save to Supabase
+    console.log('\n--- Step 6: Saving to Supabase ---');
+    const summary = await saveToSupabase(results, hasExcel, matchCount);
+
+    console.log('\n=== Analysis Complete ===');
     console.log(`✓ ${summary.total} products`);
     console.log(`✓ Buy box wins: ${summary.buyBoxWins} (${summary.winRate}%)`);
     console.log(`✓ Buy box lost: ${summary.buyBoxLost}`);
     console.log(`✓ Zero stock: ${summary.zeroStock}`);
-    console.log(`✓ Low stock: ${summary.lowStock}`);
+    console.log(`✓ Excel matched: ${matchCount} products`);
 
   } catch (err) {
     console.error('Analysis failed:', err.message);
