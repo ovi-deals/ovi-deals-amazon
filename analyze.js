@@ -433,7 +433,7 @@ async function fetchExcelFromOutlook() {
     if (!msToken) return null;
 
     const userEmail = MS_USER_EMAIL;
-    console.log(`Searching Outlook for "Stock list" email for ${userEmail}...`);
+    console.log(`Searching Outlook for "Stock List" email for ${userEmail}...`);
 
     // First test - check if we can access the mailbox at all
     const testResp = await fetch(`https://graph.microsoft.com/v1.0/users/${userEmail}/mailFolders/inbox`, {
@@ -446,36 +446,66 @@ async function fetchExcelFromOutlook() {
     }
     console.log(`✓ Mailbox accessible. Inbox has ${testData.totalItemCount} total items`);
 
-    // Search for latest email with subject "Stock list"
-    // Try without hasAttachments filter first to see if subject matches
+    // Use $search with case-insensitive subject match
+    // Note: Graph API $search is case insensitive by default
     const searchUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?` +
-      `$filter=subject eq 'Stock list'` +
-      `&$orderby=receivedDateTime desc&$top=5&$select=id,subject,receivedDateTime,hasAttachments`;
+      `$search="subject:Stock list"` +
+      `&$top=5&$select=id,subject,receivedDateTime,hasAttachments`;
 
     const msgResp = await fetch(searchUrl, {
-      headers: { 'Authorization': `Bearer ${msToken}` }
+      headers: {
+        'Authorization': `Bearer ${msToken}`,
+        'ConsistencyLevel': 'eventual'
+      }
     });
     const msgData = await msgResp.json();
     console.log(`Email search result: ${msgData.value?.length || 0} emails found`);
+
     if (msgData.value?.length > 0) {
       msgData.value.forEach(m => console.log(`  - "${m.subject}" received ${m.receivedDateTime} hasAttachments=${m.hasAttachments}`));
     } else {
       console.log('Search response:', JSON.stringify(msgData).slice(0, 300));
-      // Try broader search - last 10 emails to confirm access
-      const recentUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?$top=5&$select=subject,receivedDateTime&$orderby=receivedDateTime desc`;
-      const recentResp = await fetch(recentUrl, { headers: { 'Authorization': `Bearer ${msToken}` } });
-      const recentData = await recentResp.json();
-      console.log('Recent emails in mailbox:');
-      recentData.value?.forEach(m => console.log(`  - "${m.subject}" ${m.receivedDateTime}`));
+
+      // Try searching all mail folders including shared mailboxes
+      console.log('Trying search across all folders...');
+      const allFoldersUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?` +
+        `$search="subject:Stock"&$top=10&$select=id,subject,receivedDateTime,hasAttachments`;
+      const allResp = await fetch(allFoldersUrl, {
+        headers: { 'Authorization': `Bearer ${msToken}`, 'ConsistencyLevel': 'eventual' }
+      });
+      const allData = await allResp.json();
+      console.log(`Broader search found: ${allData.value?.length || 0} emails`);
+      allData.value?.forEach(m => console.log(`  - "${m.subject}" ${m.receivedDateTime} attach=${m.hasAttachments}`));
+
+      // Also try the ORAA Sales shared mailbox directly if different from user email
+      const sharedEmail = 'sales@oraa.au';
+      if (sharedEmail !== userEmail) {
+        console.log(`Trying shared mailbox: ${sharedEmail}...`);
+        const sharedUrl = `https://graph.microsoft.com/v1.0/users/${sharedEmail}/messages?` +
+          `$search="subject:Stock"&$top=5&$select=id,subject,receivedDateTime,hasAttachments`;
+        try {
+          const sharedResp = await fetch(sharedUrl, {
+            headers: { 'Authorization': `Bearer ${msToken}`, 'ConsistencyLevel': 'eventual' }
+          });
+          const sharedData = await sharedResp.json();
+          console.log(`Shared mailbox found: ${sharedData.value?.length || 0} emails`);
+          sharedData.value?.forEach(m => console.log(`  - "${m.subject}" ${m.receivedDateTime}`));
+          // If found in shared mailbox, use those results
+          if (sharedData.value?.length > 0) {
+            msgData.value = sharedData.value;
+          }
+        } catch(e) { console.log('Shared mailbox access error:', e.message); }
+      }
     }
 
     if (!msgData.value || msgData.value.length === 0) {
-      console.log('⚠ No "Stock list" email found in Outlook');
+      console.log('⚠ No "Stock list" email found');
       return null;
     }
 
-    // Find one with attachment
-    const msg = msgData.value.find(m => m.hasAttachments) || msgData.value[0];
+    // Sort by date descending and find one with attachment
+    const sorted = msgData.value.sort((a,b) => new Date(b.receivedDateTime) - new Date(a.receivedDateTime));
+    const msg = sorted.find(m => m.hasAttachments) || sorted[0];
     console.log(`Found email: "${msg.subject}" received ${msg.receivedDateTime}`);
 
     // Get attachments
