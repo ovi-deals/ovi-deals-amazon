@@ -433,7 +433,7 @@ async function fetchExcelFromOutlook() {
     if (!msToken) return null;
 
     const userEmail = MS_USER_EMAIL;
-    console.log(`Searching Outlook for "Stock List" email for ${userEmail}...`);
+    console.log(`Searching Outlook for "Stock list" email for ${userEmail}...`);
 
     // First test - check if we can access the mailbox at all
     const testResp = await fetch(`https://graph.microsoft.com/v1.0/users/${userEmail}/mailFolders/inbox`, {
@@ -446,10 +446,10 @@ async function fetchExcelFromOutlook() {
     }
     console.log(`✓ Mailbox accessible. Inbox has ${testData.totalItemCount} total items`);
 
-    // Search for latest email with subject "Stock List"
+    // Search for latest email with subject "Stock list"
     // Try without hasAttachments filter first to see if subject matches
     const searchUrl = `https://graph.microsoft.com/v1.0/users/${userEmail}/messages?` +
-      `$filter=subject eq 'Stock List'` +
+      `$filter=subject eq 'Stock list'` +
       `&$orderby=receivedDateTime desc&$top=5&$select=id,subject,receivedDateTime,hasAttachments`;
 
     const msgResp = await fetch(searchUrl, {
@@ -470,7 +470,7 @@ async function fetchExcelFromOutlook() {
     }
 
     if (!msgData.value || msgData.value.length === 0) {
-      console.log('⚠ No "Stock List" email found in Outlook');
+      console.log('⚠ No "Stock list" email found in Outlook');
       return null;
     }
 
