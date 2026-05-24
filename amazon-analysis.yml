@@ -2,14 +2,13 @@ name: Amazon AU Daily Analysis
 
 on:
   schedule:
-    # Sydney time (AEDT = UTC+11, AEST = UTC+10)
-    # 9am AEST  = 23:00 UTC previous day
-    # 2pm AEST  = 04:00 UTC
-    # 8pm AEST  = 10:00 UTC
     - cron: '0 23 * * *'   # 9am Sydney
     - cron: '0 4 * * *'    # 2pm Sydney
     - cron: '0 10 * * *'   # 8pm Sydney
-  workflow_dispatch:        # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   analyze:
@@ -23,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install dependencies
         run: npm install
@@ -36,6 +35,10 @@ jobs:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+          MS_USER_EMAIL: ${{ secrets.MS_USER_EMAIL }}
         run: node analyze.js
 
       - name: Report result
