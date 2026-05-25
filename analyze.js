@@ -77,7 +77,7 @@ async function spApiPost(token, path, body) {
 // ── Step 1: Get listings report ───────────────────────────────────────────────
 async function fetchListingsReport(token) {
   console.log('Requesting listings report...');
-  const reportAsins = [], activePrices = {}, activeSkus = {}, activeTitles = {}, activeQtys = {}, activeStatuses = {};
+  const reportAsins = [], activePrices = {}, activeSkus = {}, activeAllSkus = {}, activeTitles = {}, activeQtys = {}, activeStatuses = {};
 
   try {
     const rr = await spApiPost(token, '/reports/2021-06-30/reports', {
@@ -151,11 +151,17 @@ async function fetchListingsReport(token) {
             const sku = si >= 0 ? c[si]?.trim() : '';
             const title = ti >= 0 ? c[ti]?.trim() : '';
             const qty = qi >= 0 ? parseInt(c[qi]) : NaN;
-            if (price) activePrices[asin] = price;
-            if (sku) activeSkus[asin] = sku;
-            if (title) activeTitles[asin] = title;
-            if (!isNaN(qty) && qty >= 0) activeQtys[asin] = qty;
-            // Store listing status for display
+            if (price && !activePrices[asin]) activePrices[asin] = price; // keep first price
+            if (sku) {
+              activeSkus[asin] = sku; // keep last SKU for single lookup
+              if (!activeAllSkus[asin]) activeAllSkus[asin] = [];
+              if (!activeAllSkus[asin].includes(sku)) activeAllSkus[asin].push(sku);
+            }
+            if (title && !activeTitles[asin]) activeTitles[asin] = title; // keep first title
+            // Sum quantities across all SKUs for same ASIN
+            if (!isNaN(qty) && qty >= 0) {
+              activeQtys[asin] = (activeQtys[asin] || 0) + qty;
+            }
             if (status) activeStatuses[asin] = status;
           }
           console.log(`✓ Report: ${reportAsins.length} listings, ${Object.keys(activeTitles).length} with titles`);
@@ -230,63 +236,75 @@ async function fetchListingsReport(token) {
     }
   }
 
-  return { reportAsins, activePrices, activeSkus, activeTitles, activeQtys, activeStatuses };
+  return { reportAsins, activePrices, activeSkus, activeAllSkus, activeTitles, activeQtys, activeStatuses };
 }
 
 // ── Step 2: Fetch FBM quantities from Listings Items API ─────────────────────
-async function fetchFBMQuantities(token, asins, activeSkus) {
+async function fetchFBMQuantities(token, asins, activeAllSkus) {
   console.log(`Fetching FBM quantities for ${asins.length} products...`);
   const qtyMap = {};
   const MY_SELLER_ID = 'A3HU5LWFBPZMQE';
 
   for (let idx = 0; idx < asins.length; idx++) {
     const asin = asins[idx];
-    const sku = activeSkus[asin];
-    if (!sku) continue;
+    // Get ALL skus for this ASIN (may be array or single string)
+    const skus = Array.isArray(activeAllSkus[asin])
+      ? activeAllSkus[asin]
+      : (activeAllSkus[asin] ? [activeAllSkus[asin]] : []);
+    if (!skus.length) continue;
 
-    try {
-      const d = await spApiCall(token, `/listings/2021-08-01/items/${MY_SELLER_ID}/${encodeURIComponent(sku)}`, {
-        marketplaceIds: MARKETPLACE_ID,
-        includedData: 'attributes,fulfillmentAvailability'
-      });
+    let totalQty = 0;
+    let foundAny = false;
 
-      // Amazon returns: fulfillmentAvailability: [{"fulfillmentChannelCode":"DEFAULT","quantity":N}]
-      const fa = d.fulfillmentAvailability;
-      if (Array.isArray(fa) && fa.length > 0) {
-        // Find DEFAULT channel (FBM)
-        const fbm = fa.find(f => f.fulfillmentChannelCode === 'DEFAULT') || fa[0];
-        const qty = fbm.quantity;
-        if (qty !== undefined && qty !== null) {
-          qtyMap[asin] = parseInt(qty);
-        }
-      }
+    for (const sku of skus) {
+      try {
+        const d = await spApiCall(token, `/listings/2021-08-01/items/${MY_SELLER_ID}/${encodeURIComponent(sku)}`, {
+          marketplaceIds: MARKETPLACE_ID,
+          includedData: 'attributes,fulfillmentAvailability'
+        });
 
-      // Fallback: attributes
-      if (qtyMap[asin] === undefined) {
-        const attrFa = d.attributes?.fulfillment_availability;
-        if (Array.isArray(attrFa) && attrFa.length > 0) {
-          const fbm = attrFa.find(f => f.fulfillment_channel_code === 'DEFAULT') || attrFa[0];
-          const qty = fbm?.quantity;
+        // Amazon returns: fulfillmentAvailability: [{"fulfillmentChannelCode":"DEFAULT","quantity":N}]
+        const fa = d.fulfillmentAvailability;
+        if (Array.isArray(fa) && fa.length > 0) {
+          const fbm = fa.find(f => f.fulfillmentChannelCode === 'DEFAULT') || fa[0];
+          const qty = fbm.quantity;
           if (qty !== undefined && qty !== null) {
-            qtyMap[asin] = parseInt(qty);
+            totalQty += parseInt(qty);
+            foundAny = true;
           }
         }
-      }
 
-    } catch (e) { /* silent */ }
+        // Fallback: attributes
+        if (!foundAny) {
+          const attrFa = d.attributes?.fulfillment_availability;
+          if (Array.isArray(attrFa) && attrFa.length > 0) {
+            const fbm = attrFa.find(f => f.fulfillment_channel_code === 'DEFAULT') || attrFa[0];
+            const qty = fbm?.quantity;
+            if (qty !== undefined && qty !== null) {
+              totalQty += parseInt(qty);
+              foundAny = true;
+            }
+          }
+        }
+
+        await new Promise(r => setTimeout(r, 80));
+      } catch (e) { /* silent */ }
+    }
+
+    if (foundAny) {
+      qtyMap[asin] = totalQty;
+      if (skus.length > 1) console.log(`  Multi-SKU ${asin}: ${skus.length} SKUs → total qty ${totalQty}`);
+    }
 
     if (idx > 0 && idx % 100 === 0) console.log(`Qty fetch: ${idx}/${asins.length}...`);
-    await new Promise(r => setTimeout(r, 120));
+    await new Promise(r => setTimeout(r, 80));
   }
 
   const found = Object.keys(qtyMap).length;
   const zeros = Object.values(qtyMap).filter(q => q === 0).length;
   console.log(`✓ FBM quantities: ${found}/${asins.length} — Zero: ${zeros}, With stock: ${found - zeros}`);
-
-  // Log a few samples
   const samples = Object.entries(qtyMap).slice(0, 5);
   samples.forEach(([asin, qty]) => console.log(`  ${asin}: ${qty}`));
-
   return qtyMap;
 }
 
@@ -621,7 +639,7 @@ async function main() {
 
     // Step 2: Get Amazon listings
     console.log('\n--- Step 2: Fetching Amazon listings ---');
-    const { reportAsins, activePrices, activeSkus, activeTitles, activeQtys, activeStatuses } =
+    const { reportAsins, activePrices, activeSkus, activeAllSkus, activeTitles, activeQtys, activeStatuses } =
       await fetchListingsReport(token);
 
     if (reportAsins.length === 0) {
@@ -631,9 +649,9 @@ async function main() {
     const uniqueAsins = [...new Set(reportAsins)].filter(Boolean);
     console.log(`Total unique ASINs: ${uniqueAsins.length}`);
 
-    // Step 3: Fetch FBM quantities
+    // Step 3: Fetch FBM quantities — sum across all SKUs per ASIN
     console.log('\n--- Step 3: Fetching FBM quantities ---');
-    const fbmQtys = await fetchFBMQuantities(token, uniqueAsins, activeSkus);
+    const fbmQtys = await fetchFBMQuantities(token, uniqueAsins, activeAllSkus);
 
     // Step 4: Get pricing and buy box data
     console.log('\n--- Step 4: Fetching buy box and pricing ---');
