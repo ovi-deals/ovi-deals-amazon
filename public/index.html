@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ovi Deals">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="manifest" href="/manifest.json">
@@ -13,10 +12,8 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f5f5f5;color:#1a1a1a}
 .topbar{background:#1a1a1a;color:#fff;padding:0 1.5rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar-title{font-size:15px;font-weight:600}
-.topbar-sub{font-size:11px;color:#888}
-.container{max-width:1280px;margin:0 auto;padding:1rem 1rem 4rem}
-.tabs{display:flex;gap:2px;background:#fff;border-radius:10px;padding:4px;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.container{max-width:1400px;margin:0 auto;padding:1rem 1rem 4rem}
+.tabs{display:flex;gap:2px;background:#fff;border-radius:10px;padding:4px;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto}
 .tab{flex:0 0 auto;padding:7px 12px;font-size:12px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;font-weight:500;white-space:nowrap}
 .tab.active{background:#1a1a1a;color:#fff}
 .tab-panel{display:none}.tab-panel.active{display:block}
@@ -29,55 +26,58 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .metric-val{font-size:26px;font-weight:700;letter-spacing:-.02em}
 .metric-sub{font-size:10px;color:#bbb;margin-top:2px}
 .section-label{font-size:11px;font-weight:600;color:#999;letter-spacing:.07em;text-transform:uppercase;margin:1rem 0 .5rem}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:7px 10px;font-weight:600;color:#999;border-bottom:1px solid #f0f0f0;font-size:11px;text-transform:uppercase;white-space:nowrap}
-td{padding:8px 10px;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 8px;font-weight:600;color:#999;border-bottom:1px solid #f0f0f0;font-size:10px;text-transform:uppercase;white-space:nowrap;background:#fafafa}
+td{padding:7px 8px;border-bottom:1px solid #f7f7f7;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafafa}
 tr.row-danger td{background:#fff5f5}
 tr.row-warn td{background:#fffbeb}
 tr.row-solo td{background:#f0fdf4}
 tr.row-zero td{background:#fef2f2}
-.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
 .b-ok{background:#dcfce7;color:#166534}
 .b-warn{background:#fef9c3;color:#854d0e}
 .b-danger{background:#fee2e2;color:#991b1b}
-.b-info{background:#dbeafe;color:#1e40af}
 .b-purple{background:#f3e8ff;color:#6b21a8}
 .b-gray{background:#f3f4f6;color:#374151}
 .b-red{background:#fecaca;color:#7f1d1d}
+.b-blue{background:#dbeafe;color:#1e40af}
 .alert{border-radius:10px;padding:.75rem 1rem;margin-bottom:8px;border-left:3px solid #ef4444;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .alert-warn{border-left-color:#f59e0b}
-.alert-info{border-left-color:#3b82f6}
 .alert-solo{border-left-color:#22c55e}
 .alert-zero{border-left-color:#dc2626}
 .alert-title{font-weight:600;font-size:13px;margin-bottom:2px}
 .alert-body{font-size:12px;color:#666}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.empty-state{text-align:center;padding:3rem;color:#bbb;font-size:13px}
-.empty-icon{font-size:32px;margin-bottom:8px}
 .loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:3rem;color:#999;font-size:13px}
 .spinner{width:20px;height:20px;border:2px solid #e0e0e0;border-top-color:#1a1a1a;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;background:#fff;cursor:pointer;outline:none}
-.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+select,input[type=number]{padding:6px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;background:#fff;outline:none}
+input[type=number]{width:80px;text-align:center}
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
 .btn-dark{background:#1a1a1a;color:#fff}
 .btn-outline{background:#fff;color:#1a1a1a;border:1px solid #e0e0e0}
 .refresh-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
 .status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:4px}
 .status-dot.old{background:#f59e0b}
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
-.pill{background:#1a1a1a;color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
-.pill-x{cursor:pointer;opacity:.7}
-.mono{font-family:monospace;font-size:11px}
+.mono{font-family:monospace;font-size:11px;color:#555}
+.profit-inputs{background:#fff;border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.profit-inputs label{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
+.profit-inputs strong{font-size:11px;color:#999;margin-right:4px}
+.match-badge{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+.match-barcode{background:#dcfce7;color:#166534}
+.match-desc{background:#dbeafe;color:#1e40af}
+.match-none{background:#f3f4f6;color:#9ca3af}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div>
-    <div class="topbar-title">Ovi Deals — Amazon AU</div>
-    <div class="topbar-sub">Buy box · Stock · Pricing</div>
+    <div style="font-size:15px;font-weight:600">Ovi Deals — Amazon AU</div>
+    <div style="font-size:11px;color:#888">Buy box · Stock · Pricing · Profit</div>
   </div>
   <div style="font-size:11px;color:#888;text-align:right" id="last-update">Loading...</div>
 </div>
@@ -87,7 +87,6 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <div style="font-size:12px;color:#666"><span class="status-dot" id="status-dot"></span><span id="status-text">Fetching latest data...</span></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" onclick="loadData()">🔄 Refresh</button>
-      <button class="btn btn-outline" onclick="switchTab('history')">📅 History</button>
     </div>
   </div>
 
@@ -112,7 +111,7 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <div class="metric"><div class="metric-label">BB Wins</div><div class="metric-val" id="m-wins" style="color:#22c55e">—</div></div>
         <div class="metric"><div class="metric-label">BB Lost</div><div class="metric-val" id="m-lost" style="color:#ef4444">—</div></div>
         <div class="metric"><div class="metric-label">Zero stock</div><div class="metric-val" id="m-zero" style="color:#dc2626">—</div></div>
-        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-val" id="m-low" style="color:#f59e0b">—</div></div>
+        <div class="metric"><div class="metric-label">Excel matched</div><div class="metric-val" id="m-matched" style="color:#1d4ed8">—</div></div>
       </div>
       <div class="card">
         <div class="section-label">Priority alerts</div>
@@ -122,6 +121,14 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
 
     <!-- MASTER -->
     <div id="tab-master" class="tab-panel">
+      <!-- Profit calculation inputs -->
+      <div class="profit-inputs">
+        <strong>Profit settings:</strong>
+        <label>AMZ Commission %: <input type="number" id="pi-commission" value="15" min="0" max="50" step="0.5" onchange="renderMaster()"></label>
+        <label>Shipping A$: <input type="number" id="pi-shipping" value="8.50" min="0" step="0.5" onchange="renderMaster()"></label>
+        <label>Cost = Sales price × <input type="number" id="pi-costpct" value="80" min="0" max="100" step="1" onchange="renderMaster()">%</label>
+        <span style="font-size:11px;color:#999">Profit = Your price − cost − AMZ fee − shipping</span>
+      </div>
       <div class="filter-row">
         <select id="mv-buybox" onchange="renderMaster()">
           <option value="all">All buy box</option>
@@ -135,16 +142,17 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           <option value="low">Low stock</option>
           <option value="ok">Healthy</option>
         </select>
-        <select id="mv-pricing" onchange="renderMaster()">
-          <option value="all">All pricing</option>
-          <option value="toolow">Too low</option>
-          <option value="competitive">Competitive</option>
-          <option value="toohigh">Too high</option>
+        <select id="mv-match" onchange="renderMaster()">
+          <option value="all">All matches</option>
+          <option value="barcode">Barcode match</option>
+          <option value="desc">Description match</option>
+          <option value="none">No match</option>
         </select>
         <select id="mv-sort" onchange="renderMaster()">
           <option value="default">Priority sort</option>
+          <option value="profit-desc">Profit ↓</option>
+          <option value="profit-asc">Profit ↑</option>
           <option value="price-desc">Price ↓</option>
-          <option value="price-asc">Price ↑</option>
           <option value="stock-asc">Stock ↑</option>
           <option value="name">Name A-Z</option>
         </select>
@@ -152,7 +160,6 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <button class="btn btn-outline" onclick="exportMV()" style="font-size:11px">⬇ CSV</button>
         <span id="mv-count" style="font-size:12px;color:#999"></span>
       </div>
-      <div id="mv-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem"></div>
       <div class="card" style="padding:0">
         <div class="tbl-wrap">
           <table>
@@ -160,12 +167,22 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
               <th>Product</th>
               <th>ASIN</th>
               <th>Barcode</th>
+              <th>Match</th>
+              <th>Excel description</th>
               <th>Buy box</th>
               <th>Comp.</th>
               <th>Your price</th>
               <th>BB price</th>
               <th>Gap</th>
-              <th>Amz qty</th>
+              <th>AMZ qty</th>
+              <th>Excel qty</th>
+              <th>Qty diff</th>
+              <th>Sales price</th>
+              <th>Cost price</th>
+              <th>AMZ fee</th>
+              <th>Shipping</th>
+              <th>Profit</th>
+              <th>Margin</th>
               <th>Stock</th>
             </tr></thead>
             <tbody id="mv-tbody"></tbody>
@@ -193,14 +210,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Product</th>
-              <th>ASIN</th>
-              <th>Barcode</th>
-              <th>Competitors</th>
-              <th>Your price</th>
-              <th>BB price</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th>Product</th><th>ASIN</th><th>Barcode</th>
+              <th>Competitors</th><th>Your price</th><th>BB price</th><th>Status</th><th>Action</th>
             </tr></thead>
             <tbody id="bb-tbody"></tbody>
           </table>
@@ -229,12 +240,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Product</th>
-              <th>ASIN</th>
-              <th>Barcode</th>
-              <th style="text-align:center">Amazon qty</th>
-              <th>Your price</th>
-              <th>Status</th>
+              <th>Product</th><th>ASIN</th><th>Barcode</th>
+              <th style="text-align:center">AMZ qty</th><th>Your price</th><th>Status</th>
             </tr></thead>
             <tbody id="st-tbody"></tbody>
           </table>
@@ -248,14 +255,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Product</th>
-              <th>ASIN</th>
-              <th>Barcode</th>
-              <th>Your price</th>
-              <th>BB price</th>
-              <th>Competitors</th>
-              <th>Gap</th>
-              <th>Status</th>
+              <th>Product</th><th>ASIN</th><th>Barcode</th>
+              <th>Your price</th><th>BB price</th><th>Competitors</th><th>Gap</th><th>Status</th>
             </tr></thead>
             <tbody id="pr-tbody"></tbody>
           </table>
@@ -263,13 +264,12 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
       </div>
     </div>
 
-
     <!-- PROFIT -->
     <div id="tab-profit" class="tab-panel">
       <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
-        <div class="metric"><div class="metric-label">Profitable</div><div class="metric-val" id="pf-good" style="color:#22c55e">—</div><div class="metric-sub">positive margin</div></div>
-        <div class="metric"><div class="metric-label">Loss making</div><div class="metric-val" id="pf-loss" style="color:#dc2626">—</div><div class="metric-sub">below zero</div></div>
-        <div class="metric"><div class="metric-label">No cost data</div><div class="metric-val" id="pf-none" style="color:#999">—</div><div class="metric-sub">Excel not matched</div></div>
+        <div class="metric"><div class="metric-label">Profitable</div><div class="metric-val" id="pf-good" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">Loss making</div><div class="metric-val" id="pf-loss" style="color:#dc2626">—</div></div>
+        <div class="metric"><div class="metric-label">No cost data</div><div class="metric-val" id="pf-none" style="color:#999">—</div></div>
         <div class="metric"><div class="metric-label">Avg margin</div><div class="metric-val" id="pf-avg" style="color:#1d4ed8">—</div></div>
       </div>
       <div class="card" style="padding:0">
@@ -285,8 +285,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           <table>
             <thead><tr>
               <th>Product</th><th>ASIN</th><th>Barcode</th>
-              <th>Your price</th><th>Cost price</th><th>Amazon fee</th>
-              <th>Profit</th><th>Margin</th><th>Status</th>
+              <th>Your price</th><th>Cost price</th><th>AMZ fee</th>
+              <th>Shipping</th><th>Profit</th><th>Margin</th><th>Status</th>
             </tr></thead>
             <tbody id="pf-tbody"></tbody>
           </table>
@@ -297,8 +297,8 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
     <!-- INV COMPARE -->
     <div id="tab-invcompare" class="tab-panel">
       <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
-        <div class="metric"><div class="metric-label">Matched</div><div class="metric-val" id="ic-matched" style="color:#22c55e">—</div><div class="metric-sub">Excel vs Amazon</div></div>
-        <div class="metric"><div class="metric-label">Discrepancies</div><div class="metric-val" id="ic-diff" style="color:#f59e0b">—</div><div class="metric-sub">qty mismatch</div></div>
+        <div class="metric"><div class="metric-label">Matched</div><div class="metric-val" id="ic-matched" style="color:#22c55e">—</div></div>
+        <div class="metric"><div class="metric-label">Discrepancies</div><div class="metric-val" id="ic-diff" style="color:#f59e0b">—</div></div>
         <div class="metric"><div class="metric-label">Not in Excel</div><div class="metric-val" id="ic-missing" style="color:#999">—</div></div>
         <div class="metric"><div class="metric-label">Exact match</div><div class="metric-val" id="ic-exact" style="color:#22c55e">—</div></div>
       </div>
@@ -315,10 +315,10 @@ select{padding:7px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12p
           <table>
             <thead><tr>
               <th>Product</th><th>ASIN</th><th>Barcode</th>
-              <th style="text-align:center">Amazon qty</th>
+              <th style="text-align:center">AMZ qty</th>
               <th style="text-align:center">Excel qty</th>
               <th style="text-align:center">Difference</th>
-              <th>Status</th>
+              <th>Match type</th><th>Status</th>
             </tr></thead>
             <tbody id="ic-tbody"></tbody>
           </table>
@@ -345,11 +345,42 @@ let state={data:null};
 
 function $(id){return document.getElementById(id);}
 function v(id){return document.getElementById(id)?.value||'all';}
-function bc(d){return d.barcode&&d.barcode!=='—'?`<span class="mono">${d.barcode}</span>`:'<span style="color:#ccc">—</span>';}
-function asin(d){return `<span style="font-size:11px;color:#999">${d.asin||'—'}</span>`;}
+function n(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function fmt(v){return v!=null?'A$'+v.toFixed(2):'—';}
+function fmtN(v){return v!=null?v.toFixed(1)+'%':'—';}
+
+// Barcode display helper
+function bcCell(d){
+  return d.barcode&&d.barcode!=='—'
+    ?`<span class="mono">${d.barcode}</span>`
+    :'<span style="color:#ccc">—</span>';
+}
+
+// Match type badge
+function matchBadge(d){
+  if(!d.matchType||d.matchType==='none') return '<span class="badge b-gray">No match</span>';
+  if(d.matchType==='barcode') return '<span class="badge b-ok">Barcode</span>';
+  if(d.matchType==='desc') return '<span class="badge b-blue">Description</span>';
+  return '<span class="badge b-gray">—</span>';
+}
+
+// Profit calculation from settings
+function calcProfit(d){
+  const commission=n('pi-commission');
+  const shipping=n('pi-shipping');
+  const costPct=n('pi-costpct')/100;
+  const sp=d.yourPrice||d.buyBoxPrice||null;
+  const salesPrice=d.salesPrice||null;
+  const cp=d.costPrice||(salesPrice?salesPrice*costPct:null);
+  if(!sp||!cp)return{sp,cp,fee:null,profit:null,margin:null};
+  const fee=sp*(commission/100);
+  const profit=sp-cp-fee-shipping;
+  const margin=sp>0?profit/sp*100:0;
+  return{sp,cp,fee,profit,margin};
+}
 
 function switchTab(n){
-  const names=['overview','master','buybox','stock','pricing','history'];
+  const names=['overview','master','buybox','stock','pricing','profit','invcompare','history'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===n));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const p=document.getElementById('tab-'+n);if(p)p.classList.add('active');
@@ -358,7 +389,7 @@ function switchTab(n){
 
 async function sbFetch(path){
   const sep=path.includes('?')?'&':'?';
-  const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}apikey=${SUPABASE_KEY}`,{headers:{'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'}});
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}${sep}apikey=${SUPABASE_KEY}`,{headers:{'Authorization':'Bearer '+SUPABASE_KEY}});
   if(!r.ok)throw new Error('Supabase '+r.status);
   return r.json();
 }
@@ -366,23 +397,20 @@ async function sbFetch(path){
 async function loadData(){
   $('loading').style.display='flex';
   $('app').style.display='none';
-  $('status-text').textContent='Fetching latest data...';
   try{
     const rows=await sbFetch('amazon_analysis?select=run_time,data,summary&order=run_time.desc&limit=1');
-    if(!rows||!rows.length){$('loading').innerHTML='<div>No data yet. Run the GitHub Action to generate data.</div>';return;}
+    if(!rows||!rows.length){$('loading').innerHTML='<div>No data yet. Run the GitHub Action first.</div>';return;}
     state.data=rows[0].data;
     const t=new Date(rows[0].run_time);
     const mins=Math.floor((Date.now()-t)/60000);
     const ago=mins<60?mins+'m ago':mins<1440?Math.floor(mins/60)+'h ago':Math.floor(mins/1440)+'d ago';
     $('status-dot').className='status-dot'+(mins>360?' old':'');
-    $('status-text').textContent='Data from '+t.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+' at '+t.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'  ('+ago+')';
+    $('status-text').textContent='Data from '+t.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+' at '+t.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+' ('+ago+')';
     $('last-update').textContent='Updated '+ago;
     $('loading').style.display='none';
     $('app').style.display='block';
     renderAll();
-  }catch(e){
-    $('loading').innerHTML=`<div style="color:#ef4444">Error: ${e.message}</div>`;
-  }
+  }catch(e){$('loading').innerHTML=`<div style="color:#ef4444">Error: ${e.message}</div>`;}
 }
 
 function renderAll(){
@@ -391,83 +419,95 @@ function renderAll(){
   const wins=d.filter(x=>x.isBuyBoxWinner||x.isOnlyOffer);
   const lost=d.filter(x=>!x.isBuyBoxWinner&&!x.isOnlyOffer&&x.buyBoxPrice!==null);
   const zero=d.filter(x=>x.amazonQty===0);
-  const low=d.filter(x=>x.amazonQty!==null&&x.amazonQty>0&&x.amazonQty<=LOW);
+  const matched=d.filter(x=>x.excelQty!==null);
   $('m-total').textContent=d.length;
   $('m-wins').textContent=wins.length;
   $('m-lost').textContent=lost.length;
   $('m-zero').textContent=zero.length;
-  $('m-low').textContent=low.length;
-  // Alerts
+  $('m-matched').textContent=matched.length;
   const alerts=[];
-  zero.forEach(x=>alerts.push({t:'zero',title:'🔴 Zero stock: '+x.title,body:'Customers cannot purchase — restock immediately.'}));
-  lost.forEach(x=>alerts.push({t:'danger',title:'❌ Lost buy box: '+x.title,body:'Your: '+(x.yourPrice?'A$'+x.yourPrice.toFixed(2):'—')+' · BB: '+(x.buyBoxPrice?'A$'+x.buyBoxPrice.toFixed(2):'—')+' · '+x.competitorCount+' competitor(s)'}));
-  low.forEach(x=>alerts.push({t:'warn',title:'⚠ Low stock: '+x.title,body:'Only '+x.amazonQty+' units on Amazon.'}));
-  d.filter(x=>x.isOnlyOffer).forEach(x=>alerts.push({t:'solo',title:'🟢 Sole seller: '+x.title,body:'No competitors — you own the buy box.'}));
+  zero.forEach(x=>alerts.push({t:'zero',title:'🔴 Zero stock: '+x.title,body:'Restock immediately.'}));
+  lost.forEach(x=>alerts.push({t:'danger',title:'❌ Lost buy box: '+x.title,body:'Your: '+fmt(x.yourPrice)+' · BB: '+fmt(x.buyBoxPrice)+' · '+x.competitorCount+' competitor(s)'}));
+  d.filter(x=>x.amazonQty!==null&&x.amazonQty>0&&x.amazonQty<=LOW).forEach(x=>alerts.push({t:'warn',title:'⚠ Low stock: '+x.title,body:'Only '+x.amazonQty+' units on Amazon.'}));
   $('alerts-container').innerHTML=alerts.length===0
-    ?'<div class="alert alert-info"><div class="alert-title">All clear!</div></div>'
-    :alerts.slice(0,15).map(a=>`<div class="alert ${a.t==='warn'?'alert-warn':a.t==='solo'?'alert-solo':a.t==='zero'?'alert-zero':''}"><div class="alert-title">${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');
+    ?'<div class="alert" style="border-left-color:#22c55e"><div class="alert-title">All clear!</div></div>'
+    :alerts.slice(0,15).map(a=>`<div class="alert ${a.t==='warn'?'alert-warn':a.t==='zero'?'alert-zero':''}"><div class="alert-title">${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');
   renderMaster();renderBB();renderST();renderPR();renderPF();renderIC();
 }
 
 function renderMaster(){
   if(!state.data)return;
-  const bbF=v('mv-buybox'),stF=v('mv-stock'),prF=v('mv-pricing'),sort=v('mv-sort');
+  const bbF=v('mv-buybox'),stF=v('mv-stock'),mF=v('mv-match'),sort=v('mv-sort');
   let rows=state.data.map(d=>{
     const gap=d.yourPrice&&d.buyBoxPrice?d.yourPrice-d.buyBoxPrice:null;
-    const ps=d.isOnlyOffer?'solo':gap===null?'nodata':gap<-1?'toolow':gap>2?'toohigh':'competitive';
     const ss=d.amazonQty===0?'zero':d.amazonQty!==null&&d.amazonQty<=LOW?'low':d.amazonQty!==null?'ok':'nodata';
     const bs=(d.isBuyBoxWinner||d.isOnlyOffer)?'win':d.buyBoxPrice!==null?'lose':'nodata';
-    return {...d,gap,ps,ss,bs};
+    const {sp,cp,fee,profit,margin}=calcProfit(d);
+    const qtyDiff=d.excelQty!==null&&d.amazonQty!==null?d.excelQty-d.amazonQty:null;
+    return {...d,gap,ss,bs,sp,cp,fee,profit,margin,qtyDiff};
   });
   if(bbF!=='all')rows=rows.filter(r=>bbF==='solo'?r.isOnlyOffer:r.bs===bbF);
   if(stF!=='all')rows=rows.filter(r=>r.ss===stF);
-  if(prF!=='all')rows=rows.filter(r=>r.ps===prF);
-  if(sort==='price-desc')rows.sort((a,b)=>(b.yourPrice||0)-(a.yourPrice||0));
-  else if(sort==='price-asc')rows.sort((a,b)=>(a.yourPrice||0)-(b.yourPrice||0));
+  if(mF!=='all')rows=rows.filter(r=>(r.matchType||'none')===mF);
+  if(sort==='profit-desc')rows.sort((a,b)=>(b.profit??-9999)-(a.profit??-9999));
+  else if(sort==='profit-asc')rows.sort((a,b)=>(a.profit??9999)-(b.profit??9999));
+  else if(sort==='price-desc')rows.sort((a,b)=>(b.yourPrice||0)-(a.yourPrice||0));
   else if(sort==='stock-asc')rows.sort((a,b)=>(a.amazonQty??9999)-(b.amazonQty??9999));
   else if(sort==='name')rows.sort((a,b)=>a.title.localeCompare(b.title));
   else rows.sort((a,b)=>{const s=r=>r.ss==='zero'?0:r.bs==='lose'?1:r.ss==='low'?2:3;return s(a)-s(b);});
   $('mv-count').textContent=rows.length+' product'+(rows.length!==1?'s':'');
-  const pills=[];
-  if(bbF!=='all')pills.push({l:'BB: '+bbF,id:'mv-buybox'});
-  if(stF!=='all')pills.push({l:'Stock: '+stF,id:'mv-stock'});
-  if(prF!=='all')pills.push({l:'Price: '+prF,id:'mv-pricing'});
-  $('mv-pills').innerHTML=pills.map(p=>`<span class="pill">${p.l} <span class="pill-x" onclick="document.getElementById('${p.id}').value='all';renderMaster()">✕</span></span>`).join('');
+
   $('mv-tbody').innerHTML=rows.map(d=>{
     const rc=d.ss==='zero'?'row-zero':d.bs==='lose'?'row-danger':d.ss==='low'?'row-warn':d.isOnlyOffer?'row-solo':'';
-    const bbB=d.bs==='win'?(d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:10px">Sole</span>':'<span class="badge b-ok">✓ Win</span>'):d.bs==='lose'?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
+    const bbB=d.bs==='win'?(d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-purple" style="font-size:9px">Sole</span>':'<span class="badge b-ok">✓ Win</span>'):d.bs==='lose'?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
     const stB=d.ss==='zero'?'<span class="badge b-red">🔴 Zero</span>':d.ss==='low'?'<span class="badge b-warn">⚠ Low</span>':d.ss==='ok'?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">—</span>';
     const gS=d.gap!==null?`<span style="color:${d.gap<-1?'#dc2626':d.gap>2?'#f59e0b':'#16a34a'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}</span>`:'—';
+    const profitColor=d.profit===null?'#999':d.profit<0?'#dc2626':d.margin<20?'#f59e0b':'#16a34a';
+    const qtyDiff=d.qtyDiff;
+    const diffCell=qtyDiff===null?'—':qtyDiff===0?'<span style="color:#22c55e">✓</span>':`<span style="color:${qtyDiff>0?'#f59e0b':'#dc2626'};font-weight:700">${qtyDiff>0?'+':''}${qtyDiff}</span>`;
+    const excelDesc=d.excelDescription?`<span style="font-size:11px;color:#666;max-width:150px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.excelDescription}">${d.excelDescription}</span>`:'<span style="color:#ccc">—</span>';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:180px">${d.title}</td>
-      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${bc(d)}</td>
+      <td style="font-weight:600;font-size:12px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${d.title}">${d.title}</td>
+      <td class="mono" style="color:#999">${d.asin||'—'}</td>
+      <td>${bcCell(d)}</td>
+      <td>${matchBadge(d)}</td>
+      <td>${excelDesc}</td>
       <td>${bbB}</td>
       <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#6b21a8;font-size:11px">Only you</span>':d.competitorCount}</td>
-      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
-      <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
+      <td>${fmt(d.yourPrice)}</td>
+      <td>${fmt(d.buyBoxPrice)}</td>
       <td>${gS}</td>
       <td style="font-weight:700;color:${d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW?'#f59e0b':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td>
+      <td style="text-align:center">${d.excelQty!==null?d.excelQty:'<span style="color:#ccc">—</span>'}</td>
+      <td style="text-align:center">${diffCell}</td>
+      <td>${fmt(d.salesPrice)}</td>
+      <td>${fmt(d.cp)}</td>
+      <td>${fmt(d.fee)}</td>
+      <td>A$${n('pi-shipping').toFixed(2)}</td>
+      <td style="font-weight:700;color:${profitColor}">${d.profit!==null?fmt(d.profit):'<span style="color:#ccc">—</span>'}</td>
+      <td style="color:${profitColor}">${fmtN(d.margin)}</td>
       <td>${stB}</td>
     </tr>`;
   }).join('');
 }
 
-function resetMV(){['mv-buybox','mv-stock','mv-pricing'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='all';});set('mv-sort','default');renderMaster();}
-function set(id,v){const el=document.getElementById(id);if(el)el.value=v;}
+function resetMV(){['mv-buybox','mv-stock','mv-match'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='all';});document.getElementById('mv-sort').value='default';renderMaster();}
 
 function exportMV(){
   if(!state.data)return;
-  const h=['Product','ASIN','Barcode','Buy Box','Competitors','Your Price','BB Price','Gap','Amazon Qty','Stock'];
+  const h=['Product','ASIN','Barcode','Match','Excel Desc','Buy Box','Competitors','Your Price','BB Price','Gap','AMZ Qty','Excel Qty','Qty Diff','Sales Price','Cost Price','AMZ Fee','Shipping','Profit','Margin%','Stock'];
+  const commission=n('pi-commission'),shipping=n('pi-shipping'),costPct=n('pi-costpct')/100;
   const rows=state.data.map(d=>{
     const gap=d.yourPrice&&d.buyBoxPrice?(d.yourPrice-d.buyBoxPrice).toFixed(2):'';
     const bb=(d.isBuyBoxWinner||d.isOnlyOffer)?'Win':d.buyBoxPrice?'Lost':'No data';
     const st=d.amazonQty===0?'Zero':d.amazonQty!==null&&d.amazonQty<=LOW?'Low':d.amazonQty!==null?'OK':'No data';
-    return['"'+(d.title||'').replace(/"/g,'""')+'"',d.asin||'',d.barcode||'',bb,d.competitorCount,d.yourPrice?d.yourPrice.toFixed(2):'',d.buyBoxPrice?d.buyBoxPrice.toFixed(2):'',gap,d.amazonQty??'',st].join(',');
+    const {cp,fee,profit,margin}=calcProfit(d);
+    const diff=d.excelQty!==null&&d.amazonQty!==null?d.excelQty-d.amazonQty:'';
+    return['"'+(d.title||'').replace(/"/g,'""')+'"',d.asin||'',d.barcode||'',d.matchType||'none','"'+(d.excelDescription||'').replace(/"/g,'""')+'"',bb,d.competitorCount,d.yourPrice?d.yourPrice.toFixed(2):'',d.buyBoxPrice?d.buyBoxPrice.toFixed(2):'',gap,d.amazonQty??'',d.excelQty??'',diff,d.salesPrice?d.salesPrice.toFixed(2):'',cp?cp.toFixed(2):'',fee?fee.toFixed(2):'',shipping.toFixed(2),profit?profit.toFixed(2):'',margin?margin.toFixed(1):'',st].join(',');
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'}));
-  a.download='ovi-deals-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download='ovi-deals-master-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
 
 function renderBB(){
@@ -475,34 +515,29 @@ function renderBB(){
   const f=v('bb-filter'),all=state.data;
   const wins=all.filter(d=>d.isBuyBoxWinner||d.isOnlyOffer);
   const lost=all.filter(d=>!d.isBuyBoxWinner&&!d.isOnlyOffer&&d.buyBoxPrice!==null);
-  $('bb-win').textContent=wins.length;
-  $('bb-lose').textContent=lost.length;
+  $('bb-win').textContent=wins.length;$('bb-lose').textContent=lost.length;
   $('bb-rate').textContent=all.length?Math.round(wins.length/all.length*100)+'%':'—';
   let data=all;
-  if(f==='win')data=wins;
-  else if(f==='lose')data=lost;
-  else if(f==='solo')data=all.filter(d=>d.isOnlyOffer);
+  if(f==='win')data=wins;else if(f==='lose')data=lost;else if(f==='solo')data=all.filter(d=>d.isOnlyOffer);
   $('bb-tbody').innerHTML=data.map(d=>{
     const rc=d.isOnlyOffer?'row-solo':d.isBuyBoxWinner?'':'row-danger';
-    const badge=d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-ok" style="font-size:10px;opacity:.8">Sole</span>':d.isBuyBoxWinner?'<span class="badge b-ok">✓ Win</span>':d.buyBoxPrice?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
+    const badge=d.isOnlyOffer?'<span class="badge b-ok">✓ Win</span> <span class="badge b-ok" style="font-size:9px;opacity:.8">Sole</span>':d.isBuyBoxWinner?'<span class="badge b-ok">✓ Win</span>':d.buyBoxPrice?'<span class="badge b-danger">✗ Lost</span>':'<span class="badge b-gray">—</span>';
     const gap=d.yourPrice&&d.buyBoxPrice?d.yourPrice-d.buyBoxPrice:null;
     let action='—';
     if(d.isOnlyOffer)action='<span style="color:#16a34a;font-size:11px">No competitors — you control the price</span>';
     else if(d.isBuyBoxWinner)action=`<span style="color:#999;font-size:11px">${d.competitorCount} competitor(s) — monitor</span>`;
     else if(gap!==null){
-      if(Math.abs(gap)<0.01)action='<span style="color:#dc2626;font-size:11px">Same price but losing — may be FBA competitor</span>';
-      else if(gap>0)action=`<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match buy box</span>`;
-      else action='<span style="color:#f59e0b;font-size:11px">Price lower than BB but losing — check metrics</span>';
+      if(Math.abs(gap)<0.01)action='<span style="color:#dc2626;font-size:11px">Same price but losing — FBA competitor</span>';
+      else if(gap>0)action=`<span style="color:#dc2626;font-size:11px">Lower by A$${gap.toFixed(2)} to match</span>`;
+      else action='<span style="color:#f59e0b;font-size:11px">Price lower than BB — check metrics</span>';
     }
     return `<tr class="${rc}">
       <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
-      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${bc(d)}</td>
+      <td class="mono" style="color:#999">${d.asin||'—'}</td>
+      <td>${bcCell(d)}</td>
       <td style="text-align:center">${d.isOnlyOffer?'<span style="color:#16a34a;font-weight:600">Only you</span>':d.competitorCount}</td>
-      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
-      <td>${d.buyBoxPrice?'A$'+d.buyBoxPrice.toFixed(2):'—'}</td>
-      <td>${badge}</td>
-      <td style="font-size:11px">${action}</td>
+      <td>${fmt(d.yourPrice)}</td><td>${fmt(d.buyBoxPrice)}</td>
+      <td>${badge}</td><td style="font-size:11px">${action}</td>
     </tr>`;
   }).join('');
 }
@@ -514,28 +549,21 @@ function renderST(){
   const low=all.filter(d=>d.amazonQty!==null&&d.amazonQty>0&&d.amazonQty<=LOW);
   const ok=all.filter(d=>d.amazonQty!==null&&d.amazonQty>LOW);
   const nd=all.filter(d=>d.amazonQty===null);
-  $('st-zero').textContent=zero.length;
-  $('st-low').textContent=low.length;
-  $('st-ok').textContent=ok.length;
-  $('st-nodata').textContent=nd.length;
+  $('st-zero').textContent=zero.length;$('st-low').textContent=low.length;
+  $('st-ok').textContent=ok.length;$('st-nodata').textContent=nd.length;
   let data=all;
-  if(f==='zero')data=zero;
-  else if(f==='low')data=low;
-  else if(f==='ok')data=ok;
-  else if(f==='nodata')data=nd;
+  if(f==='zero')data=zero;else if(f==='low')data=low;else if(f==='ok')data=ok;else if(f==='nodata')data=nd;
   const sorted=[...data].sort((a,b)=>{const s=d=>d.amazonQty===0?0:d.amazonQty!==null&&d.amazonQty<=LOW?1:d.amazonQty===null?3:2;return s(a)-s(b);});
   $('st-tbody').innerHTML=sorted.map(d=>{
     const rc=d.amazonQty===0?'row-zero':d.amazonQty!==null&&d.amazonQty<=LOW?'row-warn':'';
     const badge=d.amazonQty===0?'<span class="badge b-red">🔴 Zero</span>':d.amazonQty!==null&&d.amazonQty<=LOW?'<span class="badge b-warn">⚠ Low</span>':d.amazonQty!==null?'<span class="badge b-ok">✓ OK</span>':'<span class="badge b-gray">No data</span>';
     const qc=d.amazonQty===0?'#dc2626':d.amazonQty!==null&&d.amazonQty<=LOW?'#f59e0b':'inherit';
-    const sbadge=d.listingStatus&&d.listingStatus.toLowerCase()!=='active'?`<span class="badge b-warn" style="font-size:10px;margin-right:4px">${d.listingStatus}</span>`:'';
     return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:200px">${sbadge}${d.title}</td>
-      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${bc(d)}</td>
+      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td class="mono" style="color:#999">${d.asin||'—'}</td>
+      <td>${bcCell(d)}</td>
       <td style="font-weight:700;color:${qc};text-align:center">${d.amazonQty!==null?d.amazonQty:'—'}</td>
-      <td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td>
-      <td>${badge}</td>
+      <td>${fmt(d.yourPrice)}</td><td>${badge}</td>
     </tr>`;
   }).join('');
 }
@@ -543,51 +571,40 @@ function renderST(){
 function renderPR(){
   if(!state.data)return;
   $('pr-tbody').innerHTML=state.data.map(d=>{
-    if(d.isOnlyOffer)return `<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
-    if(!d.buyBoxPrice)return `<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
+    if(d.isOnlyOffer)return`<tr class="row-solo"><td style="font-weight:600;font-size:12px">${d.title}</td><td class="mono" style="color:#999">${d.asin||'—'}</td><td>${bcCell(d)}</td><td>${fmt(d.yourPrice)}</td><td>—</td><td><span class="badge b-purple">Sole seller</span></td><td>—</td><td><span class="badge b-purple">Set own price</span></td></tr>`;
+    if(!d.buyBoxPrice)return`<tr><td style="font-weight:600;font-size:12px">${d.title}</td><td class="mono" style="color:#999">${d.asin||'—'}</td><td>${bcCell(d)}</td><td>${fmt(d.yourPrice)}</td><td>—</td><td>${d.competitorCount}</td><td>—</td><td><span class="badge b-gray">No data</span></td></tr>`;
     const gap=(d.yourPrice||0)-d.buyBoxPrice;
     const badge=gap<-1?'<span class="badge b-danger">Too low</span>':gap>2?'<span class="badge b-warn">Too high</span>':'<span class="badge b-ok">Competitive</span>';
     const rc=gap<-1?'row-danger':gap>2?'row-warn':'';
-    return `<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td style="font-size:11px;color:#999">${d.asin||'—'}</td><td>${bc(d)}</td><td>${d.yourPrice?'A$'+d.yourPrice.toFixed(2):'—'}</td><td>A$${d.buyBoxPrice.toFixed(2)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
+    return`<tr class="${rc}"><td style="font-weight:600;font-size:12px">${d.title}</td><td class="mono" style="color:#999">${d.asin||'—'}</td><td>${bcCell(d)}</td><td>${fmt(d.yourPrice)}</td><td>${fmt(d.buyBoxPrice)}</td><td>${d.competitorCount}</td><td style="font-weight:700;color:${gap<-1?'#dc2626':gap>2?'#f59e0b':'#16a34a'}">${gap>=0?'+':''}${gap.toFixed(2)}</td><td>${badge}</td></tr>`;
   }).join('');
 }
-
 
 function renderPF(){
   if(!state.data)return;
   const f=v('pf-filter'),all=state.data;
-  const good=all.filter(d=>d.profit!==null&&d.profit>=0);
-  const loss=all.filter(d=>d.profit!==null&&d.profit<0);
-  const none=all.filter(d=>d.profit===null);
-  $('pf-good').textContent=good.length;
-  $('pf-loss').textContent=loss.length;
-  $('pf-none').textContent=none.length;
-  const margins=all.filter(d=>d.margin!==null).map(d=>d.margin);
+  const withProfit=all.map(d=>({...d,...calcProfit(d)}));
+  const good=withProfit.filter(d=>d.profit!==null&&d.profit>=0);
+  const loss=withProfit.filter(d=>d.profit!==null&&d.profit<0);
+  const none=withProfit.filter(d=>d.profit===null);
+  $('pf-good').textContent=good.length;$('pf-loss').textContent=loss.length;$('pf-none').textContent=none.length;
+  const margins=withProfit.filter(d=>d.margin!==null).map(d=>d.margin);
   $('pf-avg').textContent=margins.length?Math.round(margins.reduce((a,b)=>a+b,0)/margins.length)+'%':'—';
-  let data=all;
-  if(f==='good')data=good;
-  else if(f==='loss')data=loss;
-  else if(f==='none')data=none;
-  const FEE_RATE=0.15,POSTAGE=8.50;
+  let data=withProfit;
+  if(f==='good')data=good;else if(f==='loss')data=loss;else if(f==='none')data=none;
   $('pf-tbody').innerHTML=data.map(d=>{
-    const sp=d.yourPrice||d.buyBoxPrice||null;
-    const cp=d.costPrice;
-    const fee=sp?sp*FEE_RATE:null;
-    const profit=d.profit;
-    const margin=d.margin;
-    const rc=profit===null?'':profit<0?'row-danger':margin<20?'row-warn':'';
-    const pfBadge=profit===null?'<span class="badge b-gray">No data</span>':profit<0?'<span class="badge b-danger">Loss</span>':margin<20?'<span class="badge b-warn">Low margin</span>':'<span class="badge b-ok">✓ Profitable</span>';
-    const pfColor=profit===null?'#999':profit<0?'#dc2626':margin<20?'#f59e0b':'#16a34a';
-    return `<tr class="${rc}">
-      <td style="font-weight:600;font-size:12px;max-width:180px">${d.title}</td>
-      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${bc(d)}</td>
-      <td>${sp?'A$'+sp.toFixed(2):'—'}</td>
-      <td>${cp?'A$'+cp.toFixed(2):'<span style="color:#ccc">—</span>'}</td>
-      <td>${fee?'A$'+fee.toFixed(2):'<span style="color:#ccc">—</span>'}</td>
-      <td style="font-weight:700;color:${pfColor}">${profit!==null?'A$'+profit.toFixed(2):'<span style="color:#ccc">Upload Excel</span>'}</td>
-      <td style="color:${pfColor}">${margin!==null?margin.toFixed(1)+'%':'—'}</td>
-      <td>${pfBadge}</td>
+    const rc=d.profit===null?'':d.profit<0?'row-danger':d.margin<20?'row-warn':'';
+    const pfB=d.profit===null?'<span class="badge b-gray">No data</span>':d.profit<0?'<span class="badge b-danger">Loss</span>':d.margin<20?'<span class="badge b-warn">Low margin</span>':'<span class="badge b-ok">✓ Profitable</span>';
+    const pc=d.profit===null?'#999':d.profit<0?'#dc2626':d.margin<20?'#f59e0b':'#16a34a';
+    return`<tr class="${rc}">
+      <td style="font-weight:600;font-size:12px;max-width:200px">${d.title}</td>
+      <td class="mono" style="color:#999">${d.asin||'—'}</td>
+      <td>${bcCell(d)}</td>
+      <td>${fmt(d.sp)}</td><td>${fmt(d.cp)}</td><td>${fmt(d.fee)}</td>
+      <td>${fmt(n('pi-shipping'))}</td>
+      <td style="font-weight:700;color:${pc}">${d.profit!==null?fmt(d.profit):'—'}</td>
+      <td style="color:${pc}">${fmtN(d.margin)}</td>
+      <td>${pfB}</td>
     </tr>`;
   }).join('');
 }
@@ -597,27 +614,25 @@ function renderIC(){
   const f=v('ic-filter'),all=state.data;
   const matched=all.filter(d=>d.excelQty!==null);
   const missing=all.filter(d=>d.excelQty===null);
-  const diff=matched.filter(d=>d.qtyDiff!==0);
-  const exact=matched.filter(d=>d.qtyDiff===0);
-  $('ic-matched').textContent=matched.length;
-  $('ic-diff').textContent=diff.length;
-  $('ic-missing').textContent=missing.length;
-  $('ic-exact').textContent=exact.length;
+  const diff=matched.filter(d=>d.qtyDiff!==0&&d.qtyDiff!==null||(d.excelQty!==null&&d.amazonQty!==null&&d.excelQty!==d.amazonQty));
+  const exact=matched.filter(d=>d.excelQty===d.amazonQty);
+  $('ic-matched').textContent=matched.length;$('ic-missing').textContent=missing.length;
+  $('ic-diff').textContent=diff.length;$('ic-exact').textContent=exact.length;
   let data=all;
-  if(f==='diff')data=diff;
-  else if(f==='exact')data=exact;
-  else if(f==='missing')data=missing;
+  if(f==='diff')data=diff;else if(f==='exact')data=exact;else if(f==='missing')data=missing;
   $('ic-tbody').innerHTML=data.map(d=>{
-    const rc=d.excelQty===null?'':d.qtyDiff!==0?'row-warn':'';
-    const diffStr=d.qtyDiff===null?'—':d.qtyDiff===0?'<span style="color:#22c55e">✓ Match</span>':`<span style="color:${d.qtyDiff>0?'#f59e0b':'#dc2626'};font-weight:700">${d.qtyDiff>0?'+':''}${d.qtyDiff}</span>`;
-    const badge=d.excelQty===null?'<span class="badge b-gray">Not in Excel</span>':d.qtyDiff===0?'<span class="badge b-ok">✓ Match</span>':Math.abs(d.qtyDiff)<=5?'<span class="badge b-warn">Minor diff</span>':'<span class="badge b-danger">Major diff</span>';
-    return `<tr class="${rc}">
+    const qDiff=d.excelQty!==null&&d.amazonQty!==null?d.excelQty-d.amazonQty:null;
+    const rc=d.excelQty===null?'':qDiff!==0&&qDiff!==null?'row-warn':'';
+    const diffStr=qDiff===null?'—':qDiff===0?'<span style="color:#22c55e">✓ Match</span>':`<span style="color:${qDiff>0?'#f59e0b':'#dc2626'};font-weight:700">${qDiff>0?'+':''}${qDiff}</span>`;
+    const badge=d.excelQty===null?'<span class="badge b-gray">Not in Excel</span>':qDiff===0?'<span class="badge b-ok">✓ Match</span>':Math.abs(qDiff)<=5?'<span class="badge b-warn">Minor diff</span>':'<span class="badge b-danger">Major diff</span>';
+    return`<tr class="${rc}">
       <td style="font-weight:600;font-size:12px;max-width:180px">${d.title}</td>
-      <td style="font-size:11px;color:#999">${d.asin||'—'}</td>
-      <td>${bc(d)}</td>
+      <td class="mono" style="color:#999">${d.asin||'—'}</td>
+      <td>${bcCell(d)}</td>
       <td style="text-align:center;font-weight:700;color:${d.amazonQty===0?'#dc2626':'inherit'}">${d.amazonQty!==null?d.amazonQty:'—'}</td>
       <td style="text-align:center">${d.excelQty!==null?d.excelQty:'<span style="color:#ccc">—</span>'}</td>
       <td style="text-align:center">${diffStr}</td>
+      <td>${matchBadge(d)}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
@@ -627,16 +642,17 @@ async function loadHistory(){
   $('history-list').innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try{
     const rows=await sbFetch('amazon_analysis?select=run_time,summary&order=run_time.desc&limit=20');
-    if(!rows.length){$('history-list').innerHTML='<div class="empty-state">No history yet</div>';return;}
+    if(!rows.length){$('history-list').innerHTML='<div style="text-align:center;padding:2rem;color:#999">No history yet</div>';return;}
     $('history-list').innerHTML=rows.map(r=>{
       const d=new Date(r.run_time);const s=r.summary||{};
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
+      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
         <div><div style="font-weight:600;font-size:13px">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</div>
         <div style="font-size:12px;color:#999">${d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div></div>
-        <div style="display:flex;gap:12px;font-size:12px">
+        <div style="display:flex;gap:12px;font-size:12px;flex-wrap:wrap">
           <span style="color:#22c55e">✓ ${s.buyBoxWins||0} wins</span>
           <span style="color:#ef4444">✗ ${s.buyBoxLost||0} lost</span>
           <span style="color:#dc2626">🔴 ${s.zeroStock||0} zero</span>
+          <span style="color:#1d4ed8">📊 ${s.excelMatched||0} matched</span>
           <span style="color:#666">${s.total||0} total</span>
         </div></div>`;
     }).join('');
@@ -648,4 +664,3 @@ loadData();
 </script>
 </body>
 </html>
-<!-- Will be replaced by full rewrite below -->
