@@ -238,6 +238,7 @@ async function fetchFBMQuantities(token, asins, activeSkus) {
   console.log(`Fetching FBM quantities for ${asins.length} products...`);
   const qtyMap = {};
   const MY_SELLER_ID = 'A3HU5LWFBPZMQE';
+  let logged = 0;
 
   for (let idx = 0; idx < asins.length; idx++) {
     const asin = asins[idx];
@@ -245,36 +246,64 @@ async function fetchFBMQuantities(token, asins, activeSkus) {
     if (!sku) continue;
 
     try {
-      // Listings Items API — fetch quantity for this SKU
       const d = await spApiCall(token, `/listings/2021-08-01/items/${MY_SELLER_ID}/${encodeURIComponent(sku)}`, {
         marketplaceIds: MARKETPLACE_ID,
-        includedData: 'attributes,fulfillmentAvailability'
+        includedData: 'attributes,fulfillmentAvailability,summaries'
       });
 
-      // FBM quantity is in fulfillmentAvailability
-      const fulfillment = d.fulfillmentAvailability;
-      if (fulfillment && fulfillment.length > 0) {
-        const qty = fulfillment[0].quantity ?? null;
-        if (qty !== null) qtyMap[asin] = qty;
+      // Log first 3 for debugging
+      if (logged < 3) {
+        console.log(`DEBUG qty for ${asin} (${sku}):`);
+        console.log(`  fulfillmentAvailability: ${JSON.stringify(d.fulfillmentAvailability)}`);
+        console.log(`  summaries: ${JSON.stringify(d.summaries?.slice(0,1))}`);
+        console.log(`  attributes.fulfillment_availability: ${JSON.stringify(d.attributes?.fulfillment_availability)}`);
+        logged++;
       }
 
-      // Also try attributes
-      if (qtyMap[asin] === undefined) {
-        const attrQty = d.attributes?.fulfillment_availability?.[0]?.quantity;
-        if (attrQty !== undefined) qtyMap[asin] = parseInt(attrQty) || 0;
+      let qty = null;
+
+      // Method 1: fulfillmentAvailability array (FBM uses fulfillableQuantity)
+      if (d.fulfillmentAvailability && d.fulfillmentAvailability.length > 0) {
+        for (const fa of d.fulfillmentAvailability) {
+          // Try multiple field names Amazon uses
+          const q = fa.fulfillableQuantity ?? fa.quantity ?? fa.availableQuantity ?? null;
+          if (q !== null && q !== undefined) { qty = parseInt(q); break; }
+        }
       }
-    } catch {}
+
+      // Method 2: attributes.fulfillment_availability
+      if (qty === null && d.attributes?.fulfillment_availability) {
+        const fa = d.attributes.fulfillment_availability;
+        const arr = Array.isArray(fa) ? fa : [fa];
+        for (const f of arr) {
+          const q = f.quantity ?? f.value ?? null;
+          if (q !== null) { qty = parseInt(q); break; }
+        }
+      }
+
+      // Method 3: summaries (sometimes has quantity)
+      if (qty === null && d.summaries && d.summaries.length > 0) {
+        const s = d.summaries[0];
+        const q = s.quantity ?? s.fulfillableQuantity ?? null;
+        if (q !== null) qty = parseInt(q);
+      }
+
+      if (qty !== null && !isNaN(qty)) {
+        qtyMap[asin] = qty;
+      }
+
+    } catch (e) {
+      // Silent — some SKUs may not be found
+    }
 
     if (idx > 0 && idx % 100 === 0) console.log(`Qty fetch progress: ${idx}/${asins.length}...`);
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 120));
   }
 
   const found = Object.keys(qtyMap).length;
   console.log(`✓ FBM quantities: ${found}/${asins.length} products have qty data`);
-  if (found > 0) {
-    const zeros = Object.values(qtyMap).filter(q => q === 0).length;
-    console.log(`  Zero stock: ${zeros}, With stock: ${found - zeros}`);
-  }
+  const zeros = Object.values(qtyMap).filter(q => q === 0).length;
+  console.log(`  Zero stock: ${zeros}, With stock: ${found - zeros}`);
   return qtyMap;
 }
 
