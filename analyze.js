@@ -629,35 +629,83 @@ async function main() {
 
     // Step 5: Merge Excel data into results
     console.log('\n--- Step 5: Merging Excel data ---');
-    let matchCount = 0;
-    for (const item of results) {
-      // Try SKU match first (most reliable)
-      let excelData = item.sku ? skuMap[item.sku] : null;
+    let matchCount = 0, barcodeMatches = 0, descMatches = 0;
 
-      // Try barcode match if no SKU match
+    // Build description similarity matcher
+    const normalize = s => s.toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+    const excelDescriptions = Object.entries(barcodeMap).map(([barcode, data]) => ({
+      barcode, ...data, normalized: normalize(data.name || '')
+    })).filter(x => x.normalized.length > 3);
+
+    for (const item of results) {
+      let excelData = null;
+      let matchType = 'none';
+
+      // 1. Try SKU match (most reliable)
+      if (item.sku && skuMap[item.sku]) {
+        excelData = skuMap[item.sku];
+        matchType = 'barcode';
+        barcodeMatches++;
+      }
+
+      // 2. Try barcode match
       if (!excelData && item.barcode) {
         const cleanBarcode = String(item.barcode).replace(/\D/g, '');
-        excelData = barcodeMap[cleanBarcode];
+        if (cleanBarcode && barcodeMap[cleanBarcode]) {
+          excelData = barcodeMap[cleanBarcode];
+          matchType = 'barcode';
+          barcodeMatches++;
+        }
+      }
+
+      // 3. Description matching fallback
+      if (!excelData && item.title) {
+        const normTitle = normalize(item.title);
+        let bestScore = 0, bestMatch = null;
+
+        for (const excelItem of excelDescriptions) {
+          // Count common words
+          const titleWords = new Set(normTitle.split(' ').filter(w => w.length > 3));
+          const excelWords = new Set(excelItem.normalized.split(' ').filter(w => w.length > 3));
+          const common = [...titleWords].filter(w => excelWords.has(w)).length;
+          const score = common / Math.max(titleWords.size, excelWords.size, 1);
+
+          if (score > bestScore && score >= 0.4) { // at least 40% word match
+            bestScore = score;
+            bestMatch = excelItem;
+          }
+        }
+
+        if (bestMatch) {
+          excelData = bestMatch;
+          matchType = 'desc';
+          descMatches++;
+          console.log(`  Desc match (${Math.round(bestScore*100)}%): "${item.title.slice(0,40)}" → "${bestMatch.name?.slice(0,40)}"`);
+        }
       }
 
       if (excelData) {
         item.excelQty = excelData.qty;
         item.salesPrice = excelData.salesPrice;
         item.costPrice = excelData.salesPrice ? excelData.salesPrice * 0.8 : null;
+        item.excelDescription = excelData.name || null;
+        item.matchType = matchType;
         item.qtyDiff = item.excelQty - (item.amazonQty || 0);
         matchCount++;
       } else {
         item.excelQty = null;
         item.salesPrice = null;
         item.costPrice = null;
+        item.excelDescription = null;
+        item.matchType = 'none';
         item.qtyDiff = null;
       }
 
-      // Calculate profit
+      // Calculate profit (15% fee, $8.50 postage defaults — overridable in dashboard)
       const sp = item.yourPrice || item.buyBoxPrice || null;
       const cp = item.costPrice;
       if (sp && cp) {
-        const fee = sp * 0.15; // Amazon AU ~15% referral fee
+        const fee = sp * 0.15;
         const postage = 8.50;
         item.profit = sp - cp - fee - postage;
         item.margin = sp > 0 ? (item.profit / sp * 100) : 0;
@@ -666,7 +714,9 @@ async function main() {
         item.margin = null;
       }
     }
+
     console.log(`✓ Excel matched: ${matchCount}/${results.length} products`);
+    console.log(`  Barcode/SKU matches: ${barcodeMatches}, Description matches: ${descMatches}`);
 
     // Step 6: Save to Supabase
     console.log('\n--- Step 6: Saving to Supabase ---');
