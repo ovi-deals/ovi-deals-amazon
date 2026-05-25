@@ -293,6 +293,8 @@ async function fetchFBMQuantities(token, asins, activeSkus) {
 // ── Step 3: Buy box + competitive pricing ─────────────────────────────────────
 async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys, activeStatuses) {
   console.log(`Fetching pricing for ${asins.length} products...`);
+  // Debug: log qty values for first 5 ASINs
+  asins.slice(0,5).forEach(a => console.log(`  QTY DEBUG ${a}: fbmQtys=${fbmQtys[a]} activeQtys=${activeQtys[a]} → final=${fbmQtys[a]!==undefined?fbmQtys[a]:(activeQtys[a]??null)}`));
   const results = [];
 
   for (let idx = 0; idx < asins.length; idx++) {
