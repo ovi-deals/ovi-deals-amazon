@@ -379,8 +379,10 @@ function bcCell(d){
 // Match type badge
 function matchBadge(d){
   if(!d.matchType||d.matchType==='none') return '<span class="badge b-gray">No match</span>';
-  if(d.matchType==='barcode') return '<span class="badge b-ok">Barcode</span>';
-  if(d.matchType==='desc') return '<span class="badge b-blue">Description</span>';
+  if(d.matchType==='barcode') return '<span class="badge b-ok" title="Matched by barcode/SKU">Barcode</span>';
+  if(d.matchType==='model') return `<span class="badge b-blue" title="Matched by model number: ${d.excelModel||''}">Model #</span>`;
+  if(d.matchType==='desc') return '<span class="badge b-purple" title="Matched by exact description">Exact desc</span>';
+  if(d.matchType==='image') return '<span class="badge b-warn" title="Matched by AI image scan">🤖 Image</span>';
   return '<span class="badge b-gray">—</span>';
 }
 
