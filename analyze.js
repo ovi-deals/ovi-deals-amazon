@@ -733,10 +733,21 @@ function parseExcelData(rows) {
     if (sku) {
       skuMap[sku] = data;
     }
-    // Store model number for lookup — normalised to uppercase, no spaces
+    // Store model number for lookup — normalised to uppercase, no spaces/brackets
     if (model && model.length >= 3) {
-      const normModel = model.toUpperCase().replace(/[\s\-_]/g, '');
-      modelMap[normModel] = data;
+      // Strip square brackets e.g. [CIF24G] → CIF24G
+      const cleanModel = model.replace(/[\[\](){}]/g, '').trim();
+      const normModel = cleanModel.toUpperCase().replace(/[\s\-_]/g, '');
+      // Skip generic words that aren't real model numbers
+      const genericWords = ['HANDLE','LID','BASE','BODY','PART','PIECE','SET','KIT',
+        'ACCESSORY','ACCESSORIES','SPARE','SPARES','UNIT','ITEM','PRODUCT','GENERIC'];
+      if (normModel.length >= 4 && !genericWords.includes(normModel)) {
+        modelMap[normModel] = data;
+        // Also store with brackets stripped version as key
+        if (cleanModel !== model) {
+          modelMap[cleanModel.toUpperCase().replace(/[\s\-_]/g,'')] = data;
+        }
+      }
     }
   }
 
@@ -915,7 +926,7 @@ async function main() {
         item.salesPrice       = excelData.salesPrice;
         item.costPrice        = excelData.salesPrice ? excelData.salesPrice * 0.8 : null;
         item.excelDescription = excelData.name || null;
-        item.excelModel       = excelData.model || null;
+        item.excelModel       = excelData.model ? excelData.model.replace(/[\[\](){}]/g,'').trim() : null;
         item.matchType        = matchType;
         item.qtyDiff          = item.excelQty - (item.amazonQty || 0);
         matchCount++;
