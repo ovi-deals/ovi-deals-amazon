@@ -318,7 +318,7 @@ async function fetchProductCatalogData(token, asins) {
     try {
       const d = await spApiCall(token, `/catalog/2022-04-01/items/${asin}`, {
         marketplaceIds: MARKETPLACE_ID,
-        includedData: 'attributes,summaries,images'
+        includedData: 'attributes,summaries,images,identifiers'
       });
 
       const attrs = d.attributes || {};
@@ -361,8 +361,15 @@ async function fetchProductCatalogData(token, asins) {
         .filter(img => ['MAIN','PT01','PT02'].includes(img.variant))
         .map(img => img.link).filter(Boolean).slice(0, 2);
 
-      if (modelNumbers.length > 0 || descText || imageUrls.length > 0) {
-        catalogMap[asin] = { modelNumbers: [...new Set(modelNumbers)], descText, imageUrls };
+      // Extract barcodes (EAN, UPC, ISBN etc.)
+      const identifiers = d.identifiers?.[0]?.identifiers || [];
+      const barcodes = identifiers
+        .filter(id => ['EAN','UPC','ISBN','GTIN','JAN'].includes(id.identifierType))
+        .map(id => id.identifier)
+        .filter(Boolean);
+
+      if (modelNumbers.length > 0 || descText || imageUrls.length > 0 || barcodes.length > 0) {
+        catalogMap[asin] = { modelNumbers: [...new Set(modelNumbers)], descText, imageUrls, barcodes };
       }
     } catch {}
 
@@ -501,7 +508,8 @@ async function fetchPricingData(token, asins, activePrices, activeTitles, active
       asin, title, yourPrice, buyBoxPrice, lowestOffer,
       isBuyBoxWinner, competitorCount, isOnlyOffer,
       amazonQty, sku: activeSkus[asin] || null,
-      listingStatus: activeStatuses[asin] || 'Active'
+      listingStatus: activeStatuses[asin] || 'Active',
+      barcode: null // will be populated after catalog fetch
     });
 
     // Small delay to avoid rate limiting
@@ -811,12 +819,22 @@ async function main() {
       }
     }
 
-    // Step 5a: Fetch catalog data for ALL unmatched products upfront
-    // (only fetch if we have model numbers to search for)
+    // Step 5a: Fetch catalog data and populate barcodes into results
     let catalogData = {};
-    if (Object.keys(modelMap).length > 0) {
-      console.log('Fetching catalog data for model/image matching...');
+    if (Object.keys(modelMap).length > 0 || hasExcel) {
+      console.log('Fetching catalog data (barcodes, model numbers, images)...');
       catalogData = await fetchProductCatalogData(token, results.map(r => r.asin));
+
+      // Populate barcodes from catalog into results
+      let barcodeCount = 0;
+      for (const item of results) {
+        const catalog = catalogData[item.asin];
+        if (catalog?.barcodes?.length > 0) {
+          item.barcode = catalog.barcodes[0]; // use first barcode
+          barcodeCount++;
+        }
+      }
+      console.log(`✓ Barcodes populated: ${barcodeCount}/${results.length} products`);
     }
 
     for (const item of results) {
@@ -830,13 +848,21 @@ async function main() {
         barcodeMatches++;
       }
 
-      // ── Tier 1b: Barcode match ───────────────────────────────────────────
-      if (!excelData && item.barcode) {
-        const cleanBarcode = String(item.barcode).replace(/\D/g, '');
-        if (cleanBarcode && barcodeMap[cleanBarcode]) {
-          excelData = barcodeMap[cleanBarcode];
-          matchType = 'barcode';
-          barcodeMatches++;
+      // ── Tier 1b: Barcode match (from catalog API) ────────────────────────
+      if (!excelData) {
+        const barcodesToCheck = [
+          item.barcode, // from catalog
+          ...(catalogData[item.asin]?.barcodes || []) // all barcodes
+        ].filter(Boolean);
+
+        for (const bc of barcodesToCheck) {
+          const cleanBC = String(bc).replace(/\D/g, '');
+          if (cleanBC && barcodeMap[cleanBC]) {
+            excelData = barcodeMap[cleanBC];
+            matchType = 'barcode';
+            barcodeMatches++;
+            break;
+          }
         }
       }
 
