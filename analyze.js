@@ -332,7 +332,13 @@ async function fetchProductCatalogData(token, asins) {
         const arr = Array.isArray(val) ? val : [val];
         arr.forEach(v => {
           const s = String(v?.value || v || '').trim();
-          if (s && s.length >= 2) modelNumbers.push(s.toUpperCase().replace(/[\s\-_]/g,''));
+          if (!s || s.length < 3) return;
+          const norm = s.toUpperCase().replace(/[\s\-_]/g,'');
+          // Filter out ASINs (10 chars starting with B0), generic words, and numbers-only
+          if (/^B0[A-Z0-9]{8}$/.test(norm)) return; // looks like ASIN
+          if (/^\d+$/.test(norm)) return; // numbers only
+          if (['NEW','USED','STANDARD','DEFAULT','NA','N/A','NONE','NULL'].includes(norm)) return;
+          modelNumbers.push(norm);
         });
       };
 
@@ -827,7 +833,7 @@ async function main() {
       if (!excelData && item.title && Object.keys(modelMap).length > 0) {
         const titleUpper = item.title.toUpperCase().replace(/[\s\-_]/g,'');
         for (const [model, data] of Object.entries(modelMap)) {
-          if (model.length >= 3 && titleUpper.includes(model)) {
+          if (model.length >= 5 && titleUpper.includes(model)) {
             excelData = data;
             matchType = 'model';
             modelMatches++;
@@ -850,6 +856,7 @@ async function main() {
       // Checks model_number, part_number, manufacturer_part_number etc.
       if (!excelData && catalogData[item.asin]?.modelNumbers?.length > 0) {
         for (const amazonModel of catalogData[item.asin].modelNumbers) {
+          // Exact match first
           if (modelMap[amazonModel]) {
             excelData = modelMap[amazonModel];
             matchType = 'model';
@@ -857,9 +864,14 @@ async function main() {
             console.log(`  Catalog model match: Amazon="${amazonModel}" → Excel="${excelData.name?.slice(0,40)}"`);
             break;
           }
-          // Also try partial: if Amazon model contains Excel model or vice versa
+          // Partial match — only if both are at least 5 chars and one contains the other
+          // AND the shorter one is at least 60% of the longer (avoids short false matches)
           for (const [excelModel, data] of Object.entries(modelMap)) {
-            if (excelModel.length >= 4 && (amazonModel.includes(excelModel) || excelModel.includes(amazonModel))) {
+            if (excelModel.length < 5 || amazonModel.length < 5) continue;
+            const shorter = Math.min(excelModel.length, amazonModel.length);
+            const longer = Math.max(excelModel.length, amazonModel.length);
+            if (shorter / longer < 0.6) continue; // too different in length
+            if (amazonModel.includes(excelModel) || excelModel.includes(amazonModel)) {
               excelData = data;
               matchType = 'model';
               modelMatches++;
@@ -875,7 +887,7 @@ async function main() {
       if (!excelData && catalogData[item.asin]?.descText) {
         const descUpper = catalogData[item.asin].descText.toUpperCase().replace(/[\s\-_]/g,'');
         for (const [model, data] of Object.entries(modelMap)) {
-          if (model.length >= 4 && descUpper.includes(model)) {
+          if (model.length >= 5 && descUpper.includes(model)) {
             excelData = data;
             matchType = 'model';
             modelMatches++;
