@@ -164,7 +164,8 @@ input[type=number]{width:80px;text-align:center}
         <select id="mv-match" onchange="renderMaster()">
           <option value="all">All matches</option>
           <option value="barcode">Barcode match</option>
-          <option value="desc">Description match</option>
+          <option value="model">Model # match</option>
+          <option value="image">Image match</option>
           <option value="none">No match</option>
         </select>
         <select id="mv-sort" onchange="renderMaster()">
@@ -175,6 +176,8 @@ input[type=number]{width:80px;text-align:center}
           <option value="stock-asc">Stock ↑</option>
           <option value="name">Name A-Z</option>
         </select>
+        <input type="text" id="mv-search-product" placeholder="🔍 Search product..." oninput="renderMaster()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;width:160px;outline:none">
+        <input type="text" id="mv-search-excel" placeholder="🔍 Search Excel desc..." oninput="renderMaster()" style="padding:6px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;width:160px;outline:none">
         <button class="btn btn-outline" onclick="resetMV()" style="font-size:11px">Reset</button>
         <button class="btn btn-outline" onclick="exportMV()" style="font-size:11px">⬇ CSV</button>
         <button class="wrap-toggle" id="wrap-btn" onclick="toggleWrap()" title="Toggle text wrap for long descriptions">↵ Wrap text</button>
@@ -460,6 +463,8 @@ function renderAll(){
 function renderMaster(){
   if(!state.data)return;
   const bbF=v('mv-buybox'),stF=v('mv-stock'),mF=v('mv-match'),sort=v('mv-sort');
+  const searchProduct=(document.getElementById('mv-search-product')?.value||'').toLowerCase().trim();
+  const searchExcel=(document.getElementById('mv-search-excel')?.value||'').toLowerCase().trim();
   let rows=state.data.map(d=>{
     const gap=d.yourPrice&&d.buyBoxPrice?d.yourPrice-d.buyBoxPrice:null;
     const ss=d.amazonQty===0?'zero':d.amazonQty!==null&&d.amazonQty<=LOW?'low':d.amazonQty!==null?'ok':'nodata';
@@ -471,6 +476,15 @@ function renderMaster(){
   if(bbF!=='all')rows=rows.filter(r=>bbF==='solo'?r.isOnlyOffer:r.bs===bbF);
   if(stF!=='all')rows=rows.filter(r=>r.ss===stF);
   if(mF!=='all')rows=rows.filter(r=>(r.matchType||'none')===mF);
+  if(searchProduct)rows=rows.filter(r=>
+    (r.title||'').toLowerCase().includes(searchProduct)||
+    (r.asin||'').toLowerCase().includes(searchProduct)||
+    (r.barcode||'').toLowerCase().includes(searchProduct)
+  );
+  if(searchExcel)rows=rows.filter(r=>
+    (r.excelDescription||'').toLowerCase().includes(searchExcel)||
+    (r.excelModel||'').toLowerCase().includes(searchExcel)
+  );
   if(sort==='profit-desc')rows.sort((a,b)=>(b.profit??-9999)-(a.profit??-9999));
   else if(sort==='profit-asc')rows.sort((a,b)=>(a.profit??9999)-(b.profit??9999));
   else if(sort==='price-desc')rows.sort((a,b)=>(b.yourPrice||0)-(a.yourPrice||0));
@@ -513,7 +527,13 @@ function renderMaster(){
   }).join('');
 }
 
-function resetMV(){['mv-buybox','mv-stock','mv-match'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='all';});document.getElementById('mv-sort').value='default';renderMaster();}
+function resetMV(){
+  ['mv-buybox','mv-stock','mv-match'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='all';});
+  document.getElementById('mv-sort').value='default';
+  document.getElementById('mv-search-product').value='';
+  document.getElementById('mv-search-excel').value='';
+  renderMaster();
+}
 
 function exportMV(){
   if(!state.data)return;
