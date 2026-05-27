@@ -911,13 +911,21 @@ async function main() {
       // ── Tier 6: Claude vision — scan product images (last resort) ─────────
       if (!excelData && catalogData[item.asin]?.imageUrls?.length > 0 && process.env.ANTHROPIC_API_KEY) {
         const candidateModels = Object.keys(modelMap);
+        if (idx < 5 || imageMatches === 0) {
+          console.log(`  Tier6 attempt ${item.asin}: ${catalogData[item.asin].imageUrls.length} images, ${candidateModels.length} candidate models`);
+        }
         const foundModel = await extractModelFromImages(catalogData[item.asin].imageUrls, candidateModels);
         if (foundModel && modelMap[foundModel]) {
           excelData = modelMap[foundModel];
           matchType = 'image';
           imageMatches++;
           console.log(`  Image match: "${foundModel}" → "${excelData.name?.slice(0,40)}" (${item.asin})`);
+        } else if (foundModel) {
+          console.log(`  Image found "${foundModel}" but not in modelMap (${item.asin})`);
         }
+      } else if (!excelData) {
+        if (!process.env.ANTHROPIC_API_KEY) console.log(`  ⚠ ANTHROPIC_API_KEY not set — skipping image scan`);
+        else if (!catalogData[item.asin]?.imageUrls?.length) console.log(`  ⚠ No images for ${item.asin}`);
       }
 
       // ── Apply matched data ───────────────────────────────────────────────
