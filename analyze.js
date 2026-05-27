@@ -308,7 +308,113 @@ async function fetchFBMQuantities(token, asins, activeAllSkus) {
   return qtyMap;
 }
 
-// ── Step 3: Buy box + competitive pricing ─────────────────────────────────────
+// ── Step 4b: Fetch product catalog data for model number matching ─────────────
+async function fetchProductCatalogData(token, asins) {
+  console.log(`Fetching catalog model numbers for ${asins.length} products...`);
+  const catalogMap = {}; // asin → { modelNumbers: [], description: '' }
+
+  for (let idx = 0; idx < asins.length; idx++) {
+    const asin = asins[idx];
+    try {
+      const d = await spApiCall(token, `/catalog/2022-04-01/items/${asin}`, {
+        marketplaceIds: MARKETPLACE_ID,
+        includedData: 'attributes,summaries,images'
+      });
+
+      const attrs = d.attributes || {};
+
+      // Extract all possible model/part number fields Amazon stores
+      const modelNumbers = [];
+
+      const addAttr = key => {
+        const val = attrs[key];
+        if (!val) return;
+        const arr = Array.isArray(val) ? val : [val];
+        arr.forEach(v => {
+          const s = String(v?.value || v || '').trim();
+          if (s && s.length >= 2) modelNumbers.push(s.toUpperCase().replace(/[\s\-_]/g,''));
+        });
+      };
+
+      addAttr('model_number');
+      addAttr('part_number');
+      addAttr('manufacturer_part_number');
+      addAttr('model_name');
+      addAttr('item_model_number');
+      addAttr('mpn');
+      addAttr('style_name');
+
+      // Grab description text
+      const bullets = attrs.bullet_point?.map(b => b.value).filter(Boolean) || [];
+      const desc = attrs.product_description?.[0]?.value || '';
+      const descText = [desc, ...bullets].join(' ');
+
+      // Grab image URLs for vision fallback
+      const images = d.images?.[0]?.images || [];
+      const imageUrls = images
+        .filter(img => ['MAIN','PT01','PT02'].includes(img.variant))
+        .map(img => img.link).filter(Boolean).slice(0, 2);
+
+      if (modelNumbers.length > 0 || descText || imageUrls.length > 0) {
+        catalogMap[asin] = { modelNumbers: [...new Set(modelNumbers)], descText, imageUrls };
+      }
+    } catch {}
+
+    if (idx > 0 && idx % 50 === 0) console.log(`Catalog fetch: ${idx}/${asins.length}...`);
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  const withModels = Object.values(catalogMap).filter(c => c.modelNumbers.length > 0).length;
+  console.log(`✓ Catalog data: ${Object.keys(catalogMap).length} products, ${withModels} have model numbers`);
+  return catalogMap;
+}
+
+// ── Tier 6: Claude vision — extract model from product images ─────────────────
+async function extractModelFromImages(imageUrls, candidateModels) {
+  if (!imageUrls || imageUrls.length === 0 || !process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const imageContent = await Promise.all(imageUrls.slice(0, 2).map(async url => {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        const buf = await resp.arrayBuffer();
+        const b64 = Buffer.from(buf).toString('base64');
+        const ct = resp.headers.get('content-type') || 'image/jpeg';
+        return { type: 'image', source: { type: 'base64', media_type: ct, data: b64 } };
+      } catch { return null; }
+    }));
+    const validImages = imageContent.filter(Boolean);
+    if (!validImages.length) return null;
+    const modelList = candidateModels.slice(0, 30).join(', ');
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 50,
+        messages: [{
+          role: 'user',
+          content: [
+            ...validImages,
+            { type: 'text', text: `Does any of these model numbers appear on this product, packaging or label: ${modelList}\n\nReply with ONLY the matching model number, or "NONE". No other text.` }
+          ]
+        }]
+      })
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const result = data.content?.[0]?.text?.trim();
+    if (result && result !== 'NONE' && result.length >= 2) {
+      return result.toUpperCase().replace(/[\s\-_]/g, '');
+    }
+    return null;
+  } catch { return null; }
+}
+
 async function fetchPricingData(token, asins, activePrices, activeTitles, activeQtys, activeSkus, fbmQtys, activeStatuses) {
   console.log(`Fetching pricing for ${asins.length} products...`);
   // Debug: log qty values for first 5 ASINs
@@ -582,9 +688,8 @@ async function fetchExcelFromOutlook() {
 }
 
 function parseExcelData(rows) {
-  if (!rows || rows.length === 0) return { barcodeMap: {}, skuMap: {} };
+  if (!rows || rows.length === 0) return { barcodeMap: {}, skuMap: {}, modelMap: {} };
 
-  // Find relevant columns (case-insensitive)
   const sample = rows[0];
   const keys = Object.keys(sample);
 
@@ -592,34 +697,45 @@ function parseExcelData(rows) {
     names.some(n => k.toLowerCase().includes(n.toLowerCase()))
   );
 
-  const barcodeCol = findCol('barcode','ean','upc','gtin','isbn');
-  const qtyCol = findCol('quantity on hand','qty on hand','quantity','qty','stock','available');
-  const priceCol = findCol('sales price','sale price','price','cost');
-  const skuCol = findCol('sku','item code','product code','code');
-  const nameCol = findCol('name','description','product','title','item');
+  const barcodeCol  = findCol('barcode','ean','upc','gtin','isbn');
+  const qtyCol      = findCol('quantity on hand','qty on hand','quantity','qty','stock','available');
+  const priceCol    = findCol('sales price','sale price','price','cost');
+  const skuCol      = findCol('sku','item code','product code','code');
+  const nameCol     = findCol('name','description','product','title','item');
+  const modelCol    = findCol('internal reference','model number','model no','model','reference','ref','part number','part no','mpn');
 
-  console.log(`Excel columns mapped: barcode=${barcodeCol} qty=${qtyCol} price=${priceCol} sku=${skuCol}`);
+  console.log(`Excel columns: barcode=${barcodeCol} qty=${qtyCol} price=${priceCol} sku=${skuCol} name=${nameCol} model=${modelCol}`);
+  if (!modelCol) console.log('⚠ No "Internal Reference" column found — model matching disabled');
 
-  const barcodeMap = {}; // barcode → {qty, salesPrice, sku, name}
-  const skuMap = {};     // sku → {qty, salesPrice, barcode, name}
+  const barcodeMap = {}; // barcode → data
+  const skuMap     = {}; // sku → data
+  const modelMap   = {}; // model number → data (for internal reference matching)
 
   for (const row of rows) {
-    const barcode = String(row[barcodeCol] || '').trim().replace(/\D/g, '');
-    const sku = String(row[skuCol] || '').trim();
-    const qty = parseInt(row[qtyCol]) || 0;
-    const salesPrice = parseFloat(row[priceCol]) || null;
-    const name = String(row[nameCol] || '').trim();
+    const barcode     = String(row[barcodeCol] || '').trim().replace(/\D/g, '');
+    const sku         = String(row[skuCol]     || '').trim();
+    const qty         = parseInt(row[qtyCol])  || 0;
+    const salesPrice  = parseFloat(row[priceCol]) || null;
+    const name        = String(row[nameCol]    || '').trim();
+    const model       = modelCol ? String(row[modelCol] || '').trim() : '';
+
+    const data = { qty, salesPrice, sku, name, barcode, model };
 
     if (barcode && barcode.length >= 8) {
-      barcodeMap[barcode] = { qty, salesPrice, sku, name };
+      barcodeMap[barcode] = data;
     }
     if (sku) {
-      skuMap[sku] = { qty, salesPrice, barcode, name };
+      skuMap[sku] = data;
+    }
+    // Store model number for lookup — normalised to uppercase, no spaces
+    if (model && model.length >= 3) {
+      const normModel = model.toUpperCase().replace(/[\s\-_]/g, '');
+      modelMap[normModel] = data;
     }
   }
 
-  console.log(`✓ Excel parsed: ${Object.keys(barcodeMap).length} barcodes, ${Object.keys(skuMap).length} SKUs`);
-  return { barcodeMap, skuMap };
+  console.log(`✓ Excel parsed: ${Object.keys(barcodeMap).length} barcodes, ${Object.keys(modelMap).length} model numbers`);
+  return { barcodeMap, skuMap, modelMap };
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -633,8 +749,8 @@ async function main() {
     // Step 1: Fetch Excel from Outlook email
     console.log('\n--- Step 1: Fetching Excel from Outlook ---');
     const excelRows = await fetchExcelFromOutlook();
-    const { barcodeMap, skuMap } = parseExcelData(excelRows);
-    const hasExcel = Object.keys(barcodeMap).length > 0 || Object.keys(skuMap).length > 0;
+    const { barcodeMap, skuMap, modelMap } = parseExcelData(excelRows);
+    const hasExcel = Object.keys(barcodeMap).length > 0 || Object.keys(modelMap).length > 0;
     console.log(hasExcel ? '✓ Excel data ready for matching' : '⚠ No Excel data — running Amazon-only analysis');
 
     // Step 2: Get Amazon listings
@@ -661,26 +777,43 @@ async function main() {
 
     // Step 5: Merge Excel data into results
     console.log('\n--- Step 5: Merging Excel data ---');
-    let matchCount = 0, barcodeMatches = 0, descMatches = 0;
+    let matchCount = 0, barcodeMatches = 0, modelMatches = 0, descMatches = 0, imageMatches = 0;
 
-    // Build description similarity matcher
-    const normalize = s => s.toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
-    const excelDescriptions = Object.entries(barcodeMap).map(([barcode, data]) => ({
-      barcode, ...data, normalized: normalize(data.name || '')
-    })).filter(x => x.normalized.length > 3);
+    // Helper: normalise model number for comparison
+    const normModel = s => String(s||'').toUpperCase().replace(/[\s\-_]/g,'');
+
+    // Helper: normalise description for exact match
+    const normDesc = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+
+    // Build exact description lookup from Excel
+    const descMap = {};
+    for (const [barcode, data] of Object.entries(barcodeMap)) {
+      if (data.name) {
+        const key = normDesc(data.name);
+        if (key.length > 5) descMap[key] = data;
+      }
+    }
+
+    // Step 5a: Fetch catalog data for ALL unmatched products upfront
+    // (only fetch if we have model numbers to search for)
+    let catalogData = {};
+    if (Object.keys(modelMap).length > 0) {
+      console.log('Fetching catalog data for model/image matching...');
+      catalogData = await fetchProductCatalogData(token, results.map(r => r.asin));
+    }
 
     for (const item of results) {
       let excelData = null;
       let matchType = 'none';
 
-      // 1. Try SKU match (most reliable)
-      if (item.sku && skuMap[item.sku]) {
+      // ── Tier 1: SKU match ────────────────────────────────────────────────
+      if (!excelData && item.sku && skuMap[item.sku]) {
         excelData = skuMap[item.sku];
         matchType = 'barcode';
         barcodeMatches++;
       }
 
-      // 2. Try barcode match
+      // ── Tier 1b: Barcode match ───────────────────────────────────────────
       if (!excelData && item.barcode) {
         const cleanBarcode = String(item.barcode).replace(/\D/g, '');
         if (cleanBarcode && barcodeMap[cleanBarcode]) {
@@ -690,50 +823,101 @@ async function main() {
         }
       }
 
-      // 3. Description matching fallback
-      if (!excelData && item.title) {
-        const normTitle = normalize(item.title);
-        let bestScore = 0, bestMatch = null;
-
-        for (const excelItem of excelDescriptions) {
-          // Count common words
-          const titleWords = new Set(normTitle.split(' ').filter(w => w.length > 3));
-          const excelWords = new Set(excelItem.normalized.split(' ').filter(w => w.length > 3));
-          const common = [...titleWords].filter(w => excelWords.has(w)).length;
-          const score = common / Math.max(titleWords.size, excelWords.size, 1);
-
-          if (score > bestScore && score >= 0.4) { // at least 40% word match
-            bestScore = score;
-            bestMatch = excelItem;
+      // ── Tier 2: Internal Reference / Model Number in title ───────────────
+      if (!excelData && item.title && Object.keys(modelMap).length > 0) {
+        const titleUpper = item.title.toUpperCase().replace(/[\s\-_]/g,'');
+        for (const [model, data] of Object.entries(modelMap)) {
+          if (model.length >= 3 && titleUpper.includes(model)) {
+            excelData = data;
+            matchType = 'model';
+            modelMatches++;
+            break;
           }
         }
+      }
 
-        if (bestMatch) {
-          excelData = bestMatch;
+      // ── Tier 3: Exact description match (100% only) ──────────────────────
+      if (!excelData && item.title) {
+        const normTitle = normDesc(item.title);
+        if (descMap[normTitle]) {
+          excelData = descMap[normTitle];
           matchType = 'desc';
           descMatches++;
-          console.log(`  Desc match (${Math.round(bestScore*100)}%): "${item.title.slice(0,40)}" → "${bestMatch.name?.slice(0,40)}"`);
         }
       }
 
-      if (excelData) {
-        item.excelQty = excelData.qty;
-        item.salesPrice = excelData.salesPrice;
-        item.costPrice = excelData.salesPrice ? excelData.salesPrice * 0.8 : null;
-        item.excelDescription = excelData.name || null;
-        item.matchType = matchType;
-        item.qtyDiff = item.excelQty - (item.amazonQty || 0);
-        matchCount++;
-      } else {
-        item.excelQty = null;
-        item.salesPrice = null;
-        item.costPrice = null;
-        item.excelDescription = null;
-        item.matchType = 'none';
-        item.qtyDiff = null;
+      // ── Tier 4: Amazon catalog model number fields ───────────────────────
+      // Checks model_number, part_number, manufacturer_part_number etc.
+      if (!excelData && catalogData[item.asin]?.modelNumbers?.length > 0) {
+        for (const amazonModel of catalogData[item.asin].modelNumbers) {
+          if (modelMap[amazonModel]) {
+            excelData = modelMap[amazonModel];
+            matchType = 'model';
+            modelMatches++;
+            console.log(`  Catalog model match: Amazon="${amazonModel}" → Excel="${excelData.name?.slice(0,40)}"`);
+            break;
+          }
+          // Also try partial: if Amazon model contains Excel model or vice versa
+          for (const [excelModel, data] of Object.entries(modelMap)) {
+            if (excelModel.length >= 4 && (amazonModel.includes(excelModel) || excelModel.includes(amazonModel))) {
+              excelData = data;
+              matchType = 'model';
+              modelMatches++;
+              console.log(`  Catalog partial model: Amazon="${amazonModel}" ~ Excel="${excelModel}"`);
+              break;
+            }
+          }
+          if (excelData) break;
+        }
       }
 
-      // Calculate profit (15% fee, $8.50 postage defaults — overridable in dashboard)
+      // ── Tier 5: Model number in catalog description/bullets ──────────────
+      if (!excelData && catalogData[item.asin]?.descText) {
+        const descUpper = catalogData[item.asin].descText.toUpperCase().replace(/[\s\-_]/g,'');
+        for (const [model, data] of Object.entries(modelMap)) {
+          if (model.length >= 4 && descUpper.includes(model)) {
+            excelData = data;
+            matchType = 'model';
+            modelMatches++;
+            console.log(`  Desc model match: "${model}" in description of ${item.asin}`);
+            break;
+          }
+        }
+      }
+
+      // ── Tier 6: Claude vision — scan product images (last resort) ─────────
+      if (!excelData && catalogData[item.asin]?.imageUrls?.length > 0 && process.env.ANTHROPIC_API_KEY) {
+        const candidateModels = Object.keys(modelMap);
+        const foundModel = await extractModelFromImages(catalogData[item.asin].imageUrls, candidateModels);
+        if (foundModel && modelMap[foundModel]) {
+          excelData = modelMap[foundModel];
+          matchType = 'image';
+          imageMatches++;
+          console.log(`  Image match: "${foundModel}" → "${excelData.name?.slice(0,40)}" (${item.asin})`);
+        }
+      }
+
+      // ── Apply matched data ───────────────────────────────────────────────
+      if (excelData) {
+        item.excelQty         = excelData.qty;
+        item.salesPrice       = excelData.salesPrice;
+        item.costPrice        = excelData.salesPrice ? excelData.salesPrice * 0.8 : null;
+        item.excelDescription = excelData.name || null;
+        item.excelModel       = excelData.model || null;
+        item.matchType        = matchType;
+        item.qtyDiff          = item.excelQty - (item.amazonQty || 0);
+        matchCount++;
+      } else {
+        item.excelQty         = null;
+        item.salesPrice       = null;
+        item.costPrice        = null;
+        item.excelDescription = null;
+        item.excelModel       = null;
+        item.matchType        = 'none';
+        item.qtyDiff          = null;
+      }
+
+      // ── Profit calculation ───────────────────────────────────────────────
       const sp = item.yourPrice || item.buyBoxPrice || null;
       const cp = item.costPrice;
       if (sp && cp) {
@@ -747,8 +931,7 @@ async function main() {
       }
     }
 
-    console.log(`✓ Excel matched: ${matchCount}/${results.length} products`);
-    console.log(`  Barcode/SKU matches: ${barcodeMatches}, Description matches: ${descMatches}`);
+    console.log(`✓ Matched: ${matchCount}/${results.length} — Barcode: ${barcodeMatches}, Model: ${modelMatches}, Description: ${descMatches}, Image: ${imageMatches}, No match: ${results.length - matchCount}`);
 
     // Step 6: Save to Supabase
     console.log('\n--- Step 6: Saving to Supabase ---');
