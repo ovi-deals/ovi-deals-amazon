@@ -33,15 +33,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 // ── Shopify — Fetch all products with inventory ────────────────────────────────
 async function fetchShopifyInventory() {
   if (!SHOPIFY_STORE_URL || !SHOPIFY_ACCESS_TOKEN) {
-    console.log('⚠ Shopify credentials not set — skipping Shopify inventory');
+    console.log('⚠ Shopify credentials not set — skipping');
     return [];
   }
+
+  // Ensure clean store URL (remove https:// if accidentally included)
+  const storeUrl = SHOPIFY_STORE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  console.log(`Fetching Shopify products from ${storeUrl}...`);
 
   const allProducts = [];
   let cursor = null;
   let page = 0;
 
-  console.log(`Fetching Shopify products from ${SHOPIFY_STORE_URL}...`);
+  try {
 
   while (true) {
     const afterClause = cursor ? `, after: "${cursor}"` : '';
@@ -64,7 +68,7 @@ async function fetchShopifyInventory() {
       }
     }`;
 
-    const resp = await fetch(`https://${SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json`, {
+    const resp = await fetch(`https://${storeUrl}/admin/api/2024-01/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,11 +78,19 @@ async function fetchShopifyInventory() {
     });
 
     if (!resp.ok) {
-      console.log(`Shopify API error: ${resp.status}`);
+      const text = await resp.text();
+      console.log(`Shopify API error ${resp.status}: ${text.slice(0,200)}`);
       break;
     }
 
-    const data = await resp.json();
+    const text = await resp.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      console.log(`Shopify JSON parse error. Response starts with: ${text.slice(0,100)}`);
+      break;
+    }
     const products = data.data?.products;
     if (!products) break;
 
@@ -107,6 +119,10 @@ async function fetchShopifyInventory() {
     if (!products.pageInfo.hasNextPage) break;
     cursor = products.pageInfo.endCursor;
     await new Promise(r => setTimeout(r, 200));
+  }
+
+  } catch(e) {
+    console.log(`⚠ Shopify fetch error: ${e.message} — continuing without Shopify data`);
   }
 
   console.log(`✓ Shopify: ${allProducts.length} total variants fetched`);
