@@ -5,7 +5,9 @@ on:
     - cron: '0 23 * * *'   # 9am Sydney
     - cron: '0 4 * * *'    # 2pm Sydney
     - cron: '0 10 * * *'   # 8pm Sydney
-  workflow_dispatch:
+  workflow_dispatch:        # Manual trigger from GitHub UI
+  repository_dispatch:      # Webhook — triggered by Power Automate when Stock list email arrives
+    types: [stock-email-received]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -35,10 +37,9 @@ jobs:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
-          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
-          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
-          MS_USER_EMAIL: ${{ secrets.MS_USER_EMAIL }}
+          SHOPIFY_STORE_URL: ${{ secrets.SHOPIFY_STORE_URL }}
+          SHOPIFY_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ACCESS_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node analyze.js
 
       - name: Report result
