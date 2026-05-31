@@ -195,6 +195,7 @@ function parseShopifyData(products) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 async function getAccessToken() {
+  console.log(`Auth: calling Cloudflare Worker at ${CLOUDFLARE_WORKER_URL?.slice(0,50)}...`);
   const resp = await fetch(`${CLOUDFLARE_WORKER_URL}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -205,7 +206,12 @@ async function getAccessToken() {
       client_secret: AMAZON_CLIENT_SECRET
     })
   });
-  const data = await resp.json();
+  const text = await resp.text();
+  console.log(`Auth response status: ${resp.status}, body starts: ${text.slice(0,100)}`);
+  let data;
+  try { data = JSON.parse(text); } catch(e) {
+    throw new Error(`Auth response is not JSON: ${text.slice(0,200)}`);
+  }
   if (!data.access_token) throw new Error('Auth failed: ' + JSON.stringify(data));
   console.log('✓ Access token obtained');
   return data.access_token;
