@@ -3,7 +3,6 @@
 
 import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
-import * as XLSX from 'xlsx';
 
 const MARKETPLACE_ID = 'A39IBJ37TRP1C6'; // Amazon AU
 const SP_API_HOST = 'https://sellingpartnerapi-fe.amazon.com';
@@ -17,10 +16,8 @@ const {
   CLOUDFLARE_WORKER_URL,
   SUPABASE_URL,
   SUPABASE_SERVICE_KEY,
-  MS_TENANT_ID,
-  MS_CLIENT_ID,
-  MS_CLIENT_SECRET,
-  MS_USER_EMAIL
+  SHOPIFY_STORE_URL,      // e.g. oraa.myshopify.com
+  SHOPIFY_ACCESS_TOKEN    // Shopify Admin API access token
 } = process.env;
 
 // Validate environment
@@ -32,6 +29,153 @@ if (missing.length) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// ── Shopify — Fetch all products with inventory ────────────────────────────────
+async function fetchShopifyInventory() {
+  if (!SHOPIFY_STORE_URL || !SHOPIFY_ACCESS_TOKEN) {
+    console.log('⚠ Shopify credentials not set — skipping Shopify inventory');
+    return [];
+  }
+
+  const allProducts = [];
+  let cursor = null;
+  let page = 0;
+
+  console.log(`Fetching Shopify products from ${SHOPIFY_STORE_URL}...`);
+
+  while (true) {
+    const afterClause = cursor ? `, after: "${cursor}"` : '';
+    const query = `{
+      products(first: 250${afterClause}) {
+        pageInfo { hasNextPage endCursor }
+        edges {
+          node {
+            id title description status
+            variants(first: 10) {
+              edges {
+                node {
+                  sku barcode price inventoryQuantity
+                  inventoryItem { unitCost { amount } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const resp = await fetch(`https://${SHOPIFY_STORE_URL}/admin/api/2024-01/graphql.json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if (!resp.ok) {
+      console.log(`Shopify API error: ${resp.status}`);
+      break;
+    }
+
+    const data = await resp.json();
+    const products = data.data?.products;
+    if (!products) break;
+
+    for (const edge of products.edges) {
+      const p = edge.node;
+      for (const ve of p.variants.edges) {
+        const v = ve.node;
+        allProducts.push({
+          title: p.title,
+          description: p.description || '',
+          status: p.status,
+          sku: v.sku || '',
+          barcode: v.barcode || '',
+          price: parseFloat(v.price) || null,
+          qty: v.inventoryQuantity || 0,
+          costPrice: v.inventoryItem?.unitCost?.amount
+            ? parseFloat(v.inventoryItem.unitCost.amount)
+            : null
+        });
+      }
+    }
+
+    page++;
+    if (page % 5 === 0) console.log(`Shopify: fetched ${allProducts.length} variants so far...`);
+
+    if (!products.pageInfo.hasNextPage) break;
+    cursor = products.pageInfo.endCursor;
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  console.log(`✓ Shopify: ${allProducts.length} total variants fetched`);
+  return allProducts;
+}
+
+function parseShopifyData(products) {
+  const barcodeMap = {}; // barcode → data
+  const skuMap     = {}; // sku → data
+  const modelMap   = {}; // model number → data
+
+  const genericWords = ['HANDLE','LID','BASE','BODY','PART','PIECE','SET','KIT',
+    'ACCESSORY','ACCESSORIES','SPARE','SPARES','UNIT','ITEM','PRODUCT','GENERIC'];
+
+  for (const p of products) {
+    const data = {
+      qty: p.qty,
+      salesPrice: p.price,
+      costPrice: p.costPrice,
+      sku: p.sku,
+      name: p.title,
+      barcode: p.barcode,
+      model: null
+    };
+
+    // Barcode map
+    if (p.barcode) {
+      const cleanBC = p.barcode.replace(/\D/g, '');
+      if (cleanBC.length >= 8) barcodeMap[cleanBC] = data;
+    }
+
+    // SKU map
+    if (p.sku) skuMap[p.sku] = data;
+
+    // Extract model numbers from description
+    // Look for patterns like: Model: HC30, SKU: HC30, model number in brackets etc.
+    const desc = p.description || '';
+    const modelPatterns = [
+      /[Mm]odel[:\s#]+([A-Z0-9\-]{3,20})/g,
+      /[Ss][Kk][Uu][:\s]+([A-Z0-9\-]{3,20})/g,
+      /\[([A-Z0-9\-]{3,20})\]/g, // [HC30]
+      /\bModel:\s*([A-Za-z0-9\-]{3,20})\b/g
+    ];
+
+    for (const pattern of modelPatterns) {
+      let match;
+      while ((match = pattern.exec(desc)) !== null) {
+        const m = match[1].toUpperCase().replace(/[\s\-_]/g, '');
+        if (m.length >= 3 && !genericWords.includes(m) && !/^B0[A-Z0-9]{8}$/.test(m)) {
+          modelMap[m] = { ...data, model: match[1] };
+        }
+      }
+    }
+
+    // Also use SKU as model number if it looks like one (not a random code)
+    if (p.sku && p.sku.length >= 3 && p.sku.length <= 20) {
+      const normSku = p.sku.toUpperCase().replace(/[\s\-_]/g, '');
+      if (!genericWords.includes(normSku) && !/^B0[A-Z0-9]{8}$/.test(normSku)) {
+        modelMap[normSku] = { ...data, model: p.sku };
+      }
+    }
+  }
+
+  const barcodeCount = Object.keys(barcodeMap).length;
+  const skuCount = Object.keys(skuMap).length;
+  const modelCount = Object.keys(modelMap).length;
+  console.log(`✓ Shopify maps: ${barcodeCount} barcodes, ${skuCount} SKUs, ${modelCount} model numbers`);
+  return { barcodeMap, skuMap, modelMap };
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 async function getAccessToken() {
@@ -772,11 +916,11 @@ async function main() {
     const token = await getAccessToken();
 
     // Step 1: Fetch Excel from Outlook email
-    console.log('\n--- Step 1: Fetching Excel from Outlook ---');
-    const excelRows = await fetchExcelFromOutlook();
-    const { barcodeMap, skuMap, modelMap } = parseExcelData(excelRows);
-    const hasExcel = Object.keys(barcodeMap).length > 0 || Object.keys(modelMap).length > 0;
-    console.log(hasExcel ? '✓ Excel data ready for matching' : '⚠ No Excel data — running Amazon-only analysis');
+    console.log('\n--- Step 1: Fetching inventory from Shopify ---');
+    const shopifyData = await fetchShopifyInventory();
+    const { barcodeMap, skuMap, modelMap } = parseShopifyData(shopifyData);
+    const hasExcel = Object.keys(barcodeMap).length > 0 || Object.keys(skuMap).length > 0;
+    console.log(hasExcel ? `✓ Shopify data ready: ${shopifyData.length} products` : '⚠ No Shopify data');
 
     // Step 2: Get Amazon listings
     console.log('\n--- Step 2: Fetching Amazon listings ---');
